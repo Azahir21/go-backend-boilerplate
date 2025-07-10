@@ -56,7 +56,7 @@ A production-ready RESTful API boilerplate using Go, Gin, GORM, JWT authenticati
 1. Clone the repository:
 
    ```bash
-   git clone https://github.com/yourusername/go-backend-boilerplate.git
+   git clone https://github.com/azahir21/go-backend-boilerplate.git
    cd go-backend-boilerplate
    ```
 
