@@ -20,7 +20,6 @@ A **beginner-friendly**, production-ready RESTful API boilerplate using Go, Gin,
 - **🐳 Docker Ready**: Production-ready Docker setup with one-command deployment
 - **🔄 Hot Reload**: Development server automatically restarts with Air when you make changes
 - **✅ Data Validation**: Request validation using Go validator to ensure data integrity
-- **🧪 Testing Setup**: Go testing framework ready to use
 - **📋 Code Quality**: Go fmt, Go vet, and golangci-lint for clean code
 
 ## 🎓 How This Boilerplate Works
