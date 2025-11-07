@@ -9,18 +9,18 @@ import (
 // The values are read by viper from a config file or environment variables.
 
 type Config struct {
-	DB      Database `mapstructure:"database"`
-	Server  Server   `mapstructure:"server"`
-	JWT     JWT      `mapstructure:"jwt"`
-	Admin   Admin    `mapstructure:"default_admin"`
-	Cache   Cache    `mapstructure:"cache"`
+	DB      Database      `mapstructure:"database"`
+	Server  Server        `mapstructure:"server"`
+	JWT     JWT           `mapstructure:"jwt"`
+	Admin   Admin         `mapstructure:"default_admin"`
+	Cache   Cache         `mapstructure:"cache"`
 	Storage StorageConfig `mapstructure:"storage"`
 	Email   EmailConfig   `mapstructure:"email"`
 }
 
 type Cache struct {
-	Type      string    `mapstructure:"type"`
-	Redis     RedisConfig `mapstructure:"redis"`
+	Type      string          `mapstructure:"type"`
+	Redis     RedisConfig     `mapstructure:"redis"`
 	Ristretto RistrettoConfig `mapstructure:"ristretto"`
 }
 
@@ -50,9 +50,9 @@ type Database struct {
 }
 
 type Server struct {
-	Env       string         `mapstructure:"env"`
-	HTTP      HTTPServerConfig `mapstructure:"http_server"`
-	GRPC      GRPCServerConfig `mapstructure:"grpc_server"`
+	Env  string           `mapstructure:"env"`
+	HTTP HTTPServerConfig `mapstructure:"http_server"`
+	GRPC GRPCServerConfig `mapstructure:"grpc_server"`
 }
 
 type HTTPServerConfig struct {
@@ -87,17 +87,12 @@ type Admin struct {
 	Password string `mapstructure:"password"`
 }
 
-type StorageConfig struct {
-	Type  string          `mapstructure:"type"`
-	Local LocalStorageConfig `mapstructure:"local"`
-	S3    S3StorageConfig    `mapstructure:"s3"`
-	GCS   GCSStorageConfig   `mapstructure:"gcs"`
-}
-
+// LocalStorageConfig holds configuration for local storage.
 type LocalStorageConfig struct {
 	BasePath string `mapstructure:"base_path"`
 }
 
+// S3StorageConfig holds configuration for S3 storage.
 type S3StorageConfig struct {
 	Region          string `mapstructure:"region"`
 	AccessKeyID     string `mapstructure:"access_key_id"`
@@ -105,18 +100,21 @@ type S3StorageConfig struct {
 	Bucket          string `mapstructure:"bucket"`
 }
 
+// GCSStorageConfig holds configuration for GCS storage.
 type GCSStorageConfig struct {
 	ProjectID       string `mapstructure:"project_id"`
 	Bucket          string `mapstructure:"bucket"`
 	CredentialsFile string `mapstructure:"credentials_file"`
 }
 
-type EmailConfig struct {
-	Type     string       `mapstructure:"type"`
-	SMTP     SmtpConfig   `mapstructure:"smtp"`
-	SendGrid SendGridConfig `mapstructure:"sendgrid"`
+type StorageConfig struct {
+	Type  string             `mapstructure:"type"`
+	Local LocalStorageConfig `mapstructure:"local"`
+	S3    S3StorageConfig    `mapstructure:"s3"`
+	GCS   GCSStorageConfig   `mapstructure:"gcs"`
 }
 
+// SmtpConfig holds configuration for SMTP email client.
 type SmtpConfig struct {
 	Host     string `mapstructure:"host"`
 	Port     int    `mapstructure:"port"`
@@ -125,40 +123,45 @@ type SmtpConfig struct {
 	From     string `mapstructure:"from"`
 }
 
+// SendGridConfig holds configuration for SendGrid email client.
 type SendGridConfig struct {
 	APIKey string `mapstructure:"api_key"`
 	From   string `mapstructure:"from"`
 }
 
+type EmailConfig struct {
+	Type     string         `mapstructure:"type"`
+	SMTP     SmtpConfig     `mapstructure:"smtp"`
+	SendGrid SendGridConfig `mapstructure:"sendgrid"`
+}
+
 // LoadConfig loads configuration from file or environment variables.
 func LoadConfig(log *logrus.Logger) (*Config, error) {
-		viper.AddConfigPath("./")
-		viper.SetConfigName("config")
-		viper.SetConfigType("yaml")
-	
-		// Read default config
-		if err := viper.ReadInConfig(); err != nil {
-			log.Warnf("Error reading default config file: %v", err)
-		}
-	
-		// Check for environment-specific config
-		env := viper.GetString("server.env")
-		if env == "" {
-			env = "development" // Default environment
-		}
-		viper.SetConfigName("config." + env)
-		if err := viper.MergeInConfig(); err != nil {
-			log.Warnf("Error reading environment-specific config file (config.%s.yaml): %v", env, err)
-		}
-	
-		viper.AutomaticEnv()
-	
-		var cfg Config
-		if err := viper.Unmarshal(&cfg); err != nil {
-			return nil, err
-		}
-	
-		return &cfg, nil
+	viper.AddConfigPath("./")
+	viper.SetConfigName("config")
+	viper.SetConfigType("yaml")
+
+	// Read default config
+	if err := viper.ReadInConfig(); err != nil {
+		log.Warnf("Error reading default config file: %v", err)
 	}
 
+	// Check for environment-specific config
+	env := viper.GetString("server.env")
+	if env == "" {
+		env = "development" // Default environment
+	}
+	viper.SetConfigName("config." + env)
+	if err := viper.MergeInConfig(); err != nil {
+		log.Warnf("Error reading environment-specific config file (config.%s.yaml): %v", env, err)
+	}
 
+	viper.AutomaticEnv()
+
+	var cfg Config
+	if err := viper.Unmarshal(&cfg); err != nil {
+		return nil, err
+	}
+
+	return &cfg, nil
+}

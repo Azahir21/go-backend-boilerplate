@@ -3,24 +3,17 @@ package external
 import (
 	"fmt"
 	"net/smtp"
-)
 
-// SmtpConfig holds configuration for SMTP email client.
-type SmtpConfig struct {
-	Host     string `mapstructure:"host"`
-	Port     int    `mapstructure:"port"`
-	Username string `mapstructure:"username"`
-	Password string `mapstructure:"password"`
-	From     string `mapstructure:"from"`
-}
+	"github.com/azahir21/go-backend-boilerplate/pkg/config"
+)
 
 // SmtpClient implements the EmailClient interface for SMTP.
 type SmtpClient struct {
-	cfg SmtpConfig
+	cfg config.SmtpConfig
 }
 
 // NewSmtpClient creates a new SmtpClient instance.
-func NewSmtpClient(cfg SmtpConfig) (EmailClient, error) {
+func NewSmtpClient(cfg config.SmtpConfig) (EmailClient, error) {
 	if cfg.Host == "" || cfg.Port == 0 || cfg.Username == "" || cfg.Password == "" || cfg.From == "" {
 		return nil, fmt.Errorf("SMTP configuration (Host, Port, Username, Password, From) cannot be empty")
 	}
@@ -41,3 +34,4 @@ func (s *SmtpClient) SendEmail(to, subject, body string) error {
 
 	return nil
 }
+

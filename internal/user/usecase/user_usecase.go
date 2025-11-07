@@ -4,15 +4,16 @@ import (
 	"context"
 	"errors"
 
-	"github.com/azahir21/go-backend-boilerplate/internal/domain"
-	"github.com/azahir21/go-backend-boilerplate/internal/helper"
-	"github.com/azahir21/go-backend-boilerplate/internal/repository"
+	"github.com/azahir21/go-backend-boilerplate/internal/shared/entity"
+	"github.com/azahir21/go-backend-boilerplate/internal/shared/helper"
+	"github.com/azahir21/go-backend-boilerplate/internal/user/delivery/http/dto"
+	"github.com/azahir21/go-backend-boilerplate/internal/user/repository"
 )
 
 type UserUsecase interface {
-    Register(ctx context.Context, req *domain.RegisterRequest) (*domain.AuthResponse, error)
-    Login(ctx context.Context, req *domain.LoginRequest) (*domain.AuthResponse, error)
-    GetProfile(ctx context.Context, userID uint) (*domain.User, error)
+    Register(ctx context.Context, req *dto.RegisterRequest) (*dto.AuthResponse, error)
+    Login(ctx context.Context, req *dto.LoginRequest) (*dto.AuthResponse, error)
+    GetProfile(ctx context.Context, userID uint) (*entity.User, error)
 }
 
 type userUsecase struct {
@@ -23,7 +24,7 @@ func NewUserUsecase(userRepo repository.UserRepository) UserUsecase {
     return &userUsecase{userRepo: userRepo}
 }
 
-func (u *userUsecase) Register(ctx context.Context, req *domain.RegisterRequest) (*domain.AuthResponse, error) {
+func (u *userUsecase) Register(ctx context.Context, req *dto.RegisterRequest) (*dto.AuthResponse, error) {
     // Check if user already exists
     if _, err := u.userRepo.FindByUsername(ctx, req.Username); err == nil {
         return nil, errors.New("username already exists")
@@ -40,7 +41,7 @@ func (u *userUsecase) Register(ctx context.Context, req *domain.RegisterRequest)
     }
 
     // Create user
-    user := &domain.User{
+    user := &entity.User{
         Username: req.Username,
         Email:    req.Email,
         Password: hashedPassword,
@@ -57,13 +58,13 @@ func (u *userUsecase) Register(ctx context.Context, req *domain.RegisterRequest)
         return nil, err
     }
 
-    return &domain.AuthResponse{
+    return &dto.AuthResponse{
         Token: token,
-        User:  user.ToUserResponse(),
+        User:  dto.ToUserResponse(user),
     }, nil
 }
 
-func (u *userUsecase) Login(ctx context.Context, req *domain.LoginRequest) (*domain.AuthResponse, error) {
+func (u *userUsecase) Login(ctx context.Context, req *dto.LoginRequest) (*dto.AuthResponse, error) {
     // Find user by username
     user, err := u.userRepo.FindByUsername(ctx, req.Username)
     if err != nil {
@@ -81,12 +82,13 @@ func (u *userUsecase) Login(ctx context.Context, req *domain.LoginRequest) (*dom
         return nil, err
     }
 
-    return &domain.AuthResponse{
+    return &dto.AuthResponse{
         Token: token,
-        User:  user.ToUserResponse(),
-    }, nil
+        User:  dto.ToUserResponse(user),
+    },
+    nil
 }
 
-func (u *userUsecase) GetProfile(ctx context.Context, userID uint) (*domain.User, error) {
+func (u *userUsecase) GetProfile(ctx context.Context, userID uint) (*entity.User, error) {
     return u.userRepo.FindByID(ctx, userID)
 }

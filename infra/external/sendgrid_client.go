@@ -3,24 +3,19 @@ package external
 import (
 	"fmt"
 
+	"github.com/azahir21/go-backend-boilerplate/pkg/config"
 	"github.com/sendgrid/sendgrid-go"
 	"github.com/sendgrid/sendgrid-go/helpers/mail"
 )
 
-// SendGridConfig holds configuration for SendGrid email client.
-type SendGridConfig struct {
-	APIKey string `mapstructure:"api_key"`
-	From   string `mapstructure:"from"`
-}
-
 // SendGridClient implements the EmailClient interface for SendGrid.
 type SendGridClient struct {
 	client *sendgrid.Client
-	cfg    SendGridConfig
+	cfg    config.SendGridConfig
 }
 
 // NewSendGridClient creates a new SendGridClient instance.
-func NewSendGridClient(cfg SendGridConfig) (EmailClient, error) {
+func NewSendGridClient(cfg config.SendGridConfig) (EmailClient, error) {
 	if cfg.APIKey == "" || cfg.From == "" {
 		return nil, fmt.Errorf("SendGrid configuration (APIKey, From) cannot be empty")
 	}

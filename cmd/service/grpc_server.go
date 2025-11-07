@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"time"
 
-	grpcDelivery "github.com/azahir21/go-backend-boilerplate/internal/delivery/grpc"
-	"github.com/azahir21/go-backend-boilerplate/internal/usecase"
+	grpcDelivery "github.com/azahir21/go-backend-boilerplate/internal/user/delivery/grpc"
+	userUsecase "github.com/azahir21/go-backend-boilerplate/internal/user/usecase"
 	"github.com/azahir21/go-backend-boilerplate/pkg/config"
 	"github.com/azahir21/go-backend-boilerplate/proto"
 	"github.com/sirupsen/logrus"
@@ -13,7 +13,7 @@ import (
 	"google.golang.org/grpc/keepalive"
 )
 
-func NewGrpcServer(log *logrus.Logger, cfg config.GRPCServerConfig, userUsecase usecase.UserUsecase) *grpc.Server {
+func NewGrpcServer(log *logrus.Logger, cfg config.GRPCServerConfig, userUsecase userUsecase.UserUsecase) *grpc.Server {
 
 	maxConnectionIdle, err := time.ParseDuration(cfg.MaxConnectionIdle)
 	if err != nil {

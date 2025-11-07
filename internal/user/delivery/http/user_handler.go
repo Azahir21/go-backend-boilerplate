@@ -1,11 +1,12 @@
-package rest
+package http
 
 import (
 	"net/http"
 
-	"github.com/azahir21/go-backend-boilerplate/internal/domain"
-	"github.com/azahir21/go-backend-boilerplate/internal/middleware"
-	"github.com/azahir21/go-backend-boilerplate/internal/usecase"
+	api "github.com/azahir21/go-backend-boilerplate/internal/shared/http"
+	"github.com/azahir21/go-backend-boilerplate/internal/shared/middleware"
+	"github.com/azahir21/go-backend-boilerplate/internal/user/delivery/http/dto"
+	"github.com/azahir21/go-backend-boilerplate/internal/user/usecase"
 	"github.com/azahir21/go-backend-boilerplate/pkg/httpresp"
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
@@ -24,28 +25,47 @@ func NewUserHandler(log *logrus.Logger, userUsecase usecase.UserUsecase) *UserHa
 }
 
 // RegisterRoutes implements the HttpRouter interface.
-func (h *UserHandler) RegisterRoutes(group *gin.RouterGroup) {
-	group.GET("/ping", h.Ping)
+func (h *UserHandler) RegisterRoutes(engine *gin.Engine) {
+	v1 := engine.Group("/api/v1")
 
-	// Auth routes
-	auth := group.Group("/auth")
-	{
-		auth.POST("/register", h.Register)
-		auth.POST("/login", h.Login)
-		auth.GET("/profile", middleware.AuthMiddleware(), h.GetProfile)
-	}
+	grp := api.NewAPIRouterGroup(v1)
+	authGrp := api.NewAPIRouterGroup(v1.Group("/auth"))
+	adminGrp := api.NewAPIRouterGroup(v1.Group("/admin"))
 
-	// Protected routes
-	protected := group.Group("/")
-	protected.Use(middleware.AuthMiddleware())
-	{
-		// Admin routes
-		admin := protected.Group("/admin")
-		admin.Use(middleware.AdminMiddleware())
-		{
-			admin.GET("/test", h.AdminOnly)
-		}
-	}
+	// Public + mixed endpoints
+	grp.Register(
+		api.EndpointSpec{Method: http.MethodGet, Path: "/ping", Handler: h.Ping},
+	)
+
+	// Auth endpoints with typed handlers (auto-binding)
+	authGrp.Register(
+		api.EndpointSpec{
+			Method:  http.MethodPost,
+			Path:    "/register",
+			Handler: h.Register,
+		},
+		api.EndpointSpec{
+			Method:  http.MethodPost,
+			Path:    "/login",
+			Handler: h.Login,
+		},
+		api.EndpointSpec{
+			Method:      http.MethodGet,
+			Path:        "/profile",
+			Handler:     h.GetProfile,
+			Middlewares: []gin.HandlerFunc{middleware.AuthMiddleware()},
+		},
+	)
+
+	// Admin endpoints
+	adminGrp.Register(
+		api.EndpointSpec{
+			Method:      http.MethodGet,
+			Path:        "/test",
+			Handler:     h.AdminOnly,
+			Middlewares: []gin.HandlerFunc{middleware.AuthMiddleware(), middleware.AdminMiddleware()},
+		},
+	)
 }
 
 // Ping godoc
@@ -66,25 +86,20 @@ func (h *UserHandler) Ping(c *gin.Context) {
 // @Tags Authentication
 // @Accept json
 // @Produce json
-// @Param request body domain.RegisterRequest true "Registration request"
-// @Success 201 {object} httpresp.Response{data=domain.AuthResponse}
+// @Param request body dto.RegisterRequest true "Registration request"
+// @Success 201 {object} httpresp.Response{data=dto.AuthResponse}
 // @Failure 400 {object} httpresp.Response
 // @Failure 500 {object} httpresp.Response
 // @Router /auth/register [post]
-func (h *UserHandler) Register(c *gin.Context) {
-	var req domain.RegisterRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		httpresp.JSON(c, http.StatusBadRequest, "Invalid request body", nil)
-		return
-	}
-
-	result, err := h.UserUsecase.Register(c.Request.Context(), &req)
+func (h *UserHandler) Register(c *gin.Context, req *dto.RegisterRequest) error {
+	result, err := h.UserUsecase.Register(c.Request.Context(), req)
 	if err != nil {
 		httpresp.JSON(c, http.StatusBadRequest, err.Error(), nil)
-		return
+		return nil
 	}
 
 	httpresp.JSON(c, http.StatusCreated, "User registered successfully", result)
+	return nil
 }
 
 // Login godoc
@@ -93,25 +108,20 @@ func (h *UserHandler) Register(c *gin.Context) {
 // @Tags Authentication
 // @Accept json
 // @Produce json
-// @Param request body domain.LoginRequest true "Login request"
-// @Success 200 {object} httpresp.Response{data=domain.AuthResponse}
+// @Param request body dto.LoginRequest true "Login request"
+// @Success 200 {object} httpresp.Response{data=dto.AuthResponse}
 // @Failure 400 {object} httpresp.Response
 // @Failure 401 {object} httpresp.Response
 // @Router /auth/login [post]
-func (h *UserHandler) Login(c *gin.Context) {
-	var req domain.LoginRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		httpresp.JSON(c, http.StatusBadRequest, "Invalid request body", nil)
-		return
-	}
-
-	result, err := h.UserUsecase.Login(c.Request.Context(), &req)
+func (h *UserHandler) Login(c *gin.Context, req *dto.LoginRequest) error {
+	result, err := h.UserUsecase.Login(c.Request.Context(), req)
 	if err != nil {
 		httpresp.JSON(c, http.StatusUnauthorized, err.Error(), nil)
-		return
+		return nil
 	}
 
 	httpresp.JSON(c, http.StatusOK, "Login successful", result)
+	return nil
 }
 
 // GetProfile godoc
@@ -121,7 +131,7 @@ func (h *UserHandler) Login(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Success 200 {object} httpresp.Response{data=domain.User}
+// @Success 200 {object} httpresp.Response{data=entity.User}
 // @Failure 401 {object} httpresp.Response
 // @Failure 404 {object} httpresp.Response
 // @Router /auth/profile [get]

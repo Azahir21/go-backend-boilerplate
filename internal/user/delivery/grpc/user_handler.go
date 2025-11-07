@@ -3,7 +3,7 @@ package grpc
 import (
 	"context"
 
-	"github.com/azahir21/go-backend-boilerplate/internal/usecase"
+	"github.com/azahir21/go-backend-boilerplate/internal/user/usecase"
 	"github.com/azahir21/go-backend-boilerplate/proto"
 	"github.com/sirupsen/logrus"
 )

@@ -14,8 +14,8 @@ import (
 	"github.com/azahir21/go-backend-boilerplate/infra/db"
 	"github.com/azahir21/go-backend-boilerplate/infra/external"
 	"github.com/azahir21/go-backend-boilerplate/infra/storage"
-	"github.com/azahir21/go-backend-boilerplate/internal/repository/implementation"
-	"github.com/azahir21/go-backend-boilerplate/internal/usecase"
+	userRepoImpl "github.com/azahir21/go-backend-boilerplate/internal/user/repository/implementation"
+	userUsecase "github.com/azahir21/go-backend-boilerplate/internal/user/usecase"
 	"github.com/azahir21/go-backend-boilerplate/pkg/config"
 	"github.com/azahir21/go-backend-boilerplate/pkg/logger"
 
@@ -49,7 +49,7 @@ func main() {
 
 	// Load configuration
 	cfg, err := config.LoadConfig(log)
-	if err != nil {
+		if err != nil {
 		log.Fatalf("failed to load config: %v", err)
 	}
 
@@ -88,10 +88,10 @@ func main() {
 	}
 
 	// Initialize repositories
-	userRepo := implementation.NewUserRepository(client)
+	userRepo := userRepoImpl.NewUserRepository(client)
 
 	// Initialize usecases
-	userUsecase := usecase.NewUserUsecase(userRepo)
+	userUsecase := userUsecase.NewUserUsecase(userRepo)
 
 	// Create HTTP and gRPC servers
 	var httpServer *http.Server

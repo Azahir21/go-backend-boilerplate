@@ -17,7 +17,7 @@ func NewEmailClient(log *logrus.Logger, cfg config.EmailConfig) (EmailClient, er
 	switch cfg.Type {
 	case "smtp":
 		log.Info("Initializing SMTP Email Client...")
-		smtpCfg := SmtpConfig{
+		smtpCfg := config.SmtpConfig{
 			Host:     cfg.SMTP.Host,
 			Port:     cfg.SMTP.Port,
 			Username: cfg.SMTP.Username,
@@ -27,7 +27,7 @@ func NewEmailClient(log *logrus.Logger, cfg config.EmailConfig) (EmailClient, er
 		return NewSmtpClient(smtpCfg)
 	case "sendgrid":
 		log.Info("Initializing SendGrid Email Client...")
-		sendGridCfg := SendGridConfig{
+		sendGridCfg := config.SendGridConfig{
 			APIKey: cfg.SendGrid.APIKey,
 			From:   cfg.SendGrid.From,
 		}

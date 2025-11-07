@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/azahir21/go-backend-boilerplate/internal/helper"
+	"github.com/azahir21/go-backend-boilerplate/internal/shared/helper"
 	"github.com/azahir21/go-backend-boilerplate/pkg/httpresp"
 	"github.com/gin-gonic/gin"
 )

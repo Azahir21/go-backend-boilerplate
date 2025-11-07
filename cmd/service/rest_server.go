@@ -5,10 +5,10 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/azahir21/go-backend-boilerplate/internal/app"
-	"github.com/azahir21/go-backend-boilerplate/internal/delivery/rest"
-	"github.com/azahir21/go-backend-boilerplate/internal/usecase"
+	restDelivery "github.com/azahir21/go-backend-boilerplate/internal/user/delivery/http"
+	userUsecase "github.com/azahir21/go-backend-boilerplate/internal/user/usecase"
 	"github.com/azahir21/go-backend-boilerplate/pkg/config"
+	sharedHttp "github.com/azahir21/go-backend-boilerplate/internal/shared/http"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -18,7 +18,7 @@ import (
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
-func NewRestServer(log *logrus.Logger, cfg config.HTTPServerConfig, userUsecase usecase.UserUsecase) *http.Server {
+func NewRestServer(log *logrus.Logger, cfg config.HTTPServerConfig, userUsecase userUsecase.UserUsecase) *http.Server {
 	// Set Gin mode based on environment
 	gin.SetMode(gin.ReleaseMode)
 
@@ -27,10 +27,10 @@ func NewRestServer(log *logrus.Logger, cfg config.HTTPServerConfig, userUsecase 
 	}
 
 	// Initialize handlers
-	userHandler := rest.NewUserHandler(log, userUsecase)
+	userHandler := restDelivery.NewUserHandler(log, userUsecase)
 
-	// Initialize Gin server
-	router := app.NewServer(userHandler)
+	// Initialize Gin server and register routes
+	router := sharedHttp.NewServer(userHandler)
 
 	// Configure CORS
 	router.Use(cors.New(cors.Config{
@@ -59,7 +59,6 @@ func NewRestServer(log *logrus.Logger, cfg config.HTTPServerConfig, userUsecase 
 	if err != nil {
 		log.Fatalf("invalid idle timeout duration: %v", err)
 	}
-
 
 	server := &http.Server{
 		Addr:         ":" + cfg.Port,
