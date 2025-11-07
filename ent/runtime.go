@@ -19,12 +19,16 @@ func init() {
 	userDescRole := userFields[3].Descriptor()
 	// user.DefaultRole holds the default value on creation for the role field.
 	user.DefaultRole = userDescRole.Default.(string)
+	// userDescStatus is the schema descriptor for status field.
+	userDescStatus := userFields[4].Descriptor()
+	// user.DefaultStatus holds the default value on creation for the status field.
+	user.DefaultStatus = userDescStatus.Default.(string)
 	// userDescCreatedAt is the schema descriptor for created_at field.
-	userDescCreatedAt := userFields[4].Descriptor()
+	userDescCreatedAt := userFields[5].Descriptor()
 	// user.DefaultCreatedAt holds the default value on creation for the created_at field.
 	user.DefaultCreatedAt = userDescCreatedAt.Default.(func() time.Time)
 	// userDescUpdatedAt is the schema descriptor for updated_at field.
-	userDescUpdatedAt := userFields[5].Descriptor()
+	userDescUpdatedAt := userFields[6].Descriptor()
 	// user.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	user.DefaultUpdatedAt = userDescUpdatedAt.Default.(func() time.Time)
 	// user.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.

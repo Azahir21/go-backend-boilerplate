@@ -84,6 +84,20 @@ func (_u *UserUpdate) SetNillableRole(v *string) *UserUpdate {
 	return _u
 }
 
+// SetStatus sets the "status" field.
+func (_u *UserUpdate) SetStatus(v string) *UserUpdate {
+	_u.mutation.SetStatus(v)
+	return _u
+}
+
+// SetNillableStatus sets the "status" field if the given value is not nil.
+func (_u *UserUpdate) SetNillableStatus(v *string) *UserUpdate {
+	if v != nil {
+		_u.SetStatus(*v)
+	}
+	return _u
+}
+
 // SetCreatedAt sets the "created_at" field.
 func (_u *UserUpdate) SetCreatedAt(v time.Time) *UserUpdate {
 	_u.mutation.SetCreatedAt(v)
@@ -186,6 +200,9 @@ func (_u *UserUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.Role(); ok {
 		_spec.SetField(user.FieldRole, field.TypeString, value)
 	}
+	if value, ok := _u.mutation.Status(); ok {
+		_spec.SetField(user.FieldStatus, field.TypeString, value)
+	}
 	if value, ok := _u.mutation.CreatedAt(); ok {
 		_spec.SetField(user.FieldCreatedAt, field.TypeTime, value)
 	}
@@ -270,6 +287,20 @@ func (_u *UserUpdateOne) SetRole(v string) *UserUpdateOne {
 func (_u *UserUpdateOne) SetNillableRole(v *string) *UserUpdateOne {
 	if v != nil {
 		_u.SetRole(*v)
+	}
+	return _u
+}
+
+// SetStatus sets the "status" field.
+func (_u *UserUpdateOne) SetStatus(v string) *UserUpdateOne {
+	_u.mutation.SetStatus(v)
+	return _u
+}
+
+// SetNillableStatus sets the "status" field if the given value is not nil.
+func (_u *UserUpdateOne) SetNillableStatus(v *string) *UserUpdateOne {
+	if v != nil {
+		_u.SetStatus(*v)
 	}
 	return _u
 }
@@ -405,6 +436,9 @@ func (_u *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) {
 	}
 	if value, ok := _u.mutation.Role(); ok {
 		_spec.SetField(user.FieldRole, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.Status(); ok {
+		_spec.SetField(user.FieldStatus, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.CreatedAt(); ok {
 		_spec.SetField(user.FieldCreatedAt, field.TypeTime, value)

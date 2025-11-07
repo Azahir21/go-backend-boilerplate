@@ -1,4 +1,4 @@
-package http
+package rest
 
 import (
 	"net/http"
@@ -12,15 +12,15 @@ import (
 )
 
 type UserHandler struct {
-    Log         *logrus.Logger
-    UserUsecase usecase.UserUsecase
+	Log         *logrus.Logger
+	UserUsecase usecase.UserUsecase
 }
 
 func NewUserHandler(log *logrus.Logger, userUsecase usecase.UserUsecase) *UserHandler {
-    return &UserHandler{
-        Log:         log,
-        UserUsecase: userUsecase,
-    }
+	return &UserHandler{
+		Log:         log,
+		UserUsecase: userUsecase,
+	}
 }
 
 // RegisterRoutes implements the HttpRouter interface.
@@ -57,7 +57,7 @@ func (h *UserHandler) RegisterRoutes(group *gin.RouterGroup) {
 // @Success 200 {object} map[string]string
 // @Router /ping [get]
 func (h *UserHandler) Ping(c *gin.Context) {
-    httpresp.JSON(c, http.StatusOK, "pong", gin.H{"message": "pong"})
+	httpresp.JSON(c, http.StatusOK, "pong", gin.H{"message": "pong"})
 }
 
 // Register godoc
@@ -72,19 +72,19 @@ func (h *UserHandler) Ping(c *gin.Context) {
 // @Failure 500 {object} httpresp.Response
 // @Router /auth/register [post]
 func (h *UserHandler) Register(c *gin.Context) {
-    var req domain.RegisterRequest
-    if err := c.ShouldBindJSON(&req); err != nil {
-        httpresp.JSON(c, http.StatusBadRequest, "Invalid request body", nil)
-        return
-    }
+	var req domain.RegisterRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		httpresp.JSON(c, http.StatusBadRequest, "Invalid request body", nil)
+		return
+	}
 
-    result, err := h.UserUsecase.Register(c.Request.Context(), &req)
-    if err != nil {
-        httpresp.JSON(c, http.StatusBadRequest, err.Error(), nil)
-        return
-    }
+	result, err := h.UserUsecase.Register(c.Request.Context(), &req)
+	if err != nil {
+		httpresp.JSON(c, http.StatusBadRequest, err.Error(), nil)
+		return
+	}
 
-    httpresp.JSON(c, http.StatusCreated, "User registered successfully", result)
+	httpresp.JSON(c, http.StatusCreated, "User registered successfully", result)
 }
 
 // Login godoc
@@ -99,19 +99,19 @@ func (h *UserHandler) Register(c *gin.Context) {
 // @Failure 401 {object} httpresp.Response
 // @Router /auth/login [post]
 func (h *UserHandler) Login(c *gin.Context) {
-    var req domain.LoginRequest
-    if err := c.ShouldBindJSON(&req); err != nil {
-        httpresp.JSON(c, http.StatusBadRequest, "Invalid request body", nil)
-        return
-    }
+	var req domain.LoginRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		httpresp.JSON(c, http.StatusBadRequest, "Invalid request body", nil)
+		return
+	}
 
-    result, err := h.UserUsecase.Login(c.Request.Context(), &req)
-    if err != nil {
-        httpresp.JSON(c, http.StatusUnauthorized, err.Error(), nil)
-        return
-    }
+	result, err := h.UserUsecase.Login(c.Request.Context(), &req)
+	if err != nil {
+		httpresp.JSON(c, http.StatusUnauthorized, err.Error(), nil)
+		return
+	}
 
-    httpresp.JSON(c, http.StatusOK, "Login successful", result)
+	httpresp.JSON(c, http.StatusOK, "Login successful", result)
 }
 
 // GetProfile godoc
@@ -126,19 +126,19 @@ func (h *UserHandler) Login(c *gin.Context) {
 // @Failure 404 {object} httpresp.Response
 // @Router /auth/profile [get]
 func (h *UserHandler) GetProfile(c *gin.Context) {
-    userID, exists := c.Get("user_id")
-    if !exists {
-        httpresp.JSON(c, http.StatusUnauthorized, "User not authenticated", nil)
-        return
-    }
+	userID, exists := c.Get("user_id")
+	if !exists {
+		httpresp.JSON(c, http.StatusUnauthorized, "User not authenticated", nil)
+		return
+	}
 
-    user, err := h.UserUsecase.GetProfile(c.Request.Context(), userID.(uint))
-    if err != nil {
-        httpresp.JSON(c, http.StatusNotFound, "User not found", nil)
-        return
-    }
+	user, err := h.UserUsecase.GetProfile(c.Request.Context(), userID.(uint))
+	if err != nil {
+		httpresp.JSON(c, http.StatusNotFound, "User not found", nil)
+		return
+	}
 
-    httpresp.JSON(c, http.StatusOK, "Profile retrieved successfully", user)
+	httpresp.JSON(c, http.StatusOK, "Profile retrieved successfully", user)
 }
 
 // AdminOnly godoc
@@ -153,8 +153,8 @@ func (h *UserHandler) GetProfile(c *gin.Context) {
 // @Failure 403 {object} httpresp.Response
 // @Router /admin/test [get]
 func (h *UserHandler) AdminOnly(c *gin.Context) {
-    httpresp.JSON(c, http.StatusOK, "Admin access granted", gin.H{
-        "message": "This is an admin-only endpoint",
-        "user":    c.GetString("username"),
-    })
+	httpresp.JSON(c, http.StatusOK, "Admin access granted", gin.H{
+		"message": "This is an admin-only endpoint",
+		"user":    c.GetString("username"),
+	})
 }

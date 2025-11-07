@@ -9,25 +9,71 @@ import (
 // The values are read by viper from a config file or environment variables.
 
 type Config struct {
-	DB     Database `mapstructure:"database"`
-	Server Server   `mapstructure:"server"`
-	JWT    JWT      `mapstructure:"jwt"`
-	Admin  Admin    `mapstructure:"default_admin"`
+	DB      Database `mapstructure:"database"`
+	Server  Server   `mapstructure:"server"`
+	JWT     JWT      `mapstructure:"jwt"`
+	Admin   Admin    `mapstructure:"default_admin"`
+	Cache   Cache    `mapstructure:"cache"`
+	Storage StorageConfig `mapstructure:"storage"`
+	Email   EmailConfig   `mapstructure:"email"`
+}
+
+type Cache struct {
+	Type      string    `mapstructure:"type"`
+	Redis     RedisConfig `mapstructure:"redis"`
+	Ristretto RistrettoConfig `mapstructure:"ristretto"`
+}
+
+type RedisConfig struct {
+	Addr     string `mapstructure:"addr"`
+	Password string `mapstructure:"password"`
+	DB       int    `mapstructure:"db"`
+}
+
+type RistrettoConfig struct {
+	MaxCost     int64 `mapstructure:"max_cost"`
+	NumCounters int64 `mapstructure:"num_counters"`
+	BufferItems int64 `mapstructure:"buffer_items"`
+	Metrics     bool  `mapstructure:"metrics"`
 }
 
 type Database struct {
-	Host     string `mapstructure:"host"`
-	Port     int    `mapstructure:"port"`
-	User     string `mapstructure:"user"`
-	Password string `mapstructure:"password"`
-	Name     string `mapstructure:"name"`
-	SSLMode  string `mapstructure:"sslmode"`
+	Driver      string `mapstructure:"driver"`
+	DSN         string `mapstructure:"dsn"`
+	Host        string `mapstructure:"host"`
+	Port        int    `mapstructure:"port"`
+	User        string `mapstructure:"user"`
+	Password    string `mapstructure:"password"`
+	Name        string `mapstructure:"name"`
+	SSLMode     string `mapstructure:"sslmode"`
+	AutoMigrate bool   `mapstructure:"auto_migrate"`
 }
 
 type Server struct {
-	HTTPPort string `mapstructure:"http_port"`
-	GRPCPort string `mapstructure:"grpc_port"`
-	Env      string `mapstructure:"env"`
+	Env       string         `mapstructure:"env"`
+	HTTP      HTTPServerConfig `mapstructure:"http_server"`
+	GRPC      GRPCServerConfig `mapstructure:"grpc_server"`
+}
+
+type HTTPServerConfig struct {
+	Port          string   `mapstructure:"port"`
+	Enable        bool     `mapstructure:"enable"`
+	CorsOrigins   []string `mapstructure:"cors_origins"`
+	ReadTimeout   string   `mapstructure:"read_timeout"`
+	WriteTimeout  string   `mapstructure:"write_timeout"`
+	IdleTimeout   string   `mapstructure:"idle_timeout"`
+	StartupBanner bool     `mapstructure:"startup_banner"`
+}
+
+type GRPCServerConfig struct {
+	Port                   string `mapstructure:"port"`
+	Enable                 bool   `mapstructure:"enable"`
+	MaxConnectionIdle      string `mapstructure:"max_connection_idle"`
+	Timeout                string `mapstructure:"timeout"`
+	MaxConnectionAge       string `mapstructure:"max_connection_age"`
+	MaxConnectionAgeGrace  string `mapstructure:"max_connection_age_grace"`
+	Time                   string `mapstructure:"time"`
+	ForceTransportSecurity bool   `mapstructure:"force_transport_security"`
 }
 
 type JWT struct {
@@ -41,22 +87,78 @@ type Admin struct {
 	Password string `mapstructure:"password"`
 }
 
+type StorageConfig struct {
+	Type  string          `mapstructure:"type"`
+	Local LocalStorageConfig `mapstructure:"local"`
+	S3    S3StorageConfig    `mapstructure:"s3"`
+	GCS   GCSStorageConfig   `mapstructure:"gcs"`
+}
+
+type LocalStorageConfig struct {
+	BasePath string `mapstructure:"base_path"`
+}
+
+type S3StorageConfig struct {
+	Region          string `mapstructure:"region"`
+	AccessKeyID     string `mapstructure:"access_key_id"`
+	SecretAccessKey string `mapstructure:"secret_access_key"`
+	Bucket          string `mapstructure:"bucket"`
+}
+
+type GCSStorageConfig struct {
+	ProjectID       string `mapstructure:"project_id"`
+	Bucket          string `mapstructure:"bucket"`
+	CredentialsFile string `mapstructure:"credentials_file"`
+}
+
+type EmailConfig struct {
+	Type     string       `mapstructure:"type"`
+	SMTP     SmtpConfig   `mapstructure:"smtp"`
+	SendGrid SendGridConfig `mapstructure:"sendgrid"`
+}
+
+type SmtpConfig struct {
+	Host     string `mapstructure:"host"`
+	Port     int    `mapstructure:"port"`
+	Username string `mapstructure:"username"`
+	Password string `mapstructure:"password"`
+	From     string `mapstructure:"from"`
+}
+
+type SendGridConfig struct {
+	APIKey string `mapstructure:"api_key"`
+	From   string `mapstructure:"from"`
+}
+
 // LoadConfig loads configuration from file or environment variables.
 func LoadConfig(log *logrus.Logger) (*Config, error) {
-	viper.AddConfigPath("./")
-	viper.SetConfigName("config")
-	viper.SetConfigType("yaml")
-
-	viper.AutomaticEnv()
-
-	if err := viper.ReadInConfig(); err != nil {
-		log.Warn("Error reading config file, using environment variables")
+		viper.AddConfigPath("./")
+		viper.SetConfigName("config")
+		viper.SetConfigType("yaml")
+	
+		// Read default config
+		if err := viper.ReadInConfig(); err != nil {
+			log.Warnf("Error reading default config file: %v", err)
+		}
+	
+		// Check for environment-specific config
+		env := viper.GetString("server.env")
+		if env == "" {
+			env = "development" // Default environment
+		}
+		viper.SetConfigName("config." + env)
+		if err := viper.MergeInConfig(); err != nil {
+			log.Warnf("Error reading environment-specific config file (config.%s.yaml): %v", env, err)
+		}
+	
+		viper.AutomaticEnv()
+	
+		var cfg Config
+		if err := viper.Unmarshal(&cfg); err != nil {
+			return nil, err
+		}
+	
+		return &cfg, nil
 	}
 
-	var cfg Config
-	if err := viper.Unmarshal(&cfg); err != nil {
-		return nil, err
-	}
 
-	return &cfg, nil
-}
