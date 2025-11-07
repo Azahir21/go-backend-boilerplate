@@ -1,0 +1,21 @@
+database:
+  host: localhost
+  port: 5432
+  user: postgres
+  password: "123456"
+  name: headcount_checker
+  sslmode: disable
+
+server:
+  http_port: "8080"
+  grpc_port: "8081"
+  env: development
+
+jwt:
+  secret: your-secret-key-change-this-in-production
+  expiry_hours: 72
+
+default_admin:
+  username: admin
+  email: admin@example.com
+  password: admin123

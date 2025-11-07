@@ -1,35 +1,35 @@
-package service
+package usecase
 
 import (
+	"context"
 	"errors"
 
+	"github.com/azahir21/go-backend-boilerplate/internal/domain"
 	"github.com/azahir21/go-backend-boilerplate/internal/helper"
-	"github.com/azahir21/go-backend-boilerplate/internal/model"
 	"github.com/azahir21/go-backend-boilerplate/internal/repository"
-	"gorm.io/gorm"
 )
 
-type AuthService interface {
-    Register(req *model.RegisterRequest) (*model.AuthResponse, error)
-    Login(req *model.LoginRequest) (*model.AuthResponse, error)
-    GetProfile(userID uint) (*model.User, error)
+type UserUsecase interface {
+    Register(ctx context.Context, req *domain.RegisterRequest) (*domain.AuthResponse, error)
+    Login(ctx context.Context, req *domain.LoginRequest) (*domain.AuthResponse, error)
+    GetProfile(ctx context.Context, userID uint) (*domain.User, error)
 }
 
-type authService struct {
+type userUsecase struct {
     userRepo repository.UserRepository
 }
 
-func NewAuthService(userRepo repository.UserRepository) AuthService {
-    return &authService{userRepo: userRepo}
+func NewUserUsecase(userRepo repository.UserRepository) UserUsecase {
+    return &userUsecase{userRepo: userRepo}
 }
 
-func (s *authService) Register(req *model.RegisterRequest) (*model.AuthResponse, error) {
+func (u *userUsecase) Register(ctx context.Context, req *domain.RegisterRequest) (*domain.AuthResponse, error) {
     // Check if user already exists
-    if _, err := s.userRepo.FindByUsername(req.Username); err == nil {
+    if _, err := u.userRepo.FindByUsername(ctx, req.Username); err == nil {
         return nil, errors.New("username already exists")
     }
 
-    if _, err := s.userRepo.FindByEmail(req.Email); err == nil {
+    if _, err := u.userRepo.FindByEmail(ctx, req.Email); err == nil {
         return nil, errors.New("email already exists")
     }
 
@@ -40,14 +40,14 @@ func (s *authService) Register(req *model.RegisterRequest) (*model.AuthResponse,
     }
 
     // Create user
-    user := &model.User{
+    user := &domain.User{
         Username: req.Username,
         Email:    req.Email,
         Password: hashedPassword,
         Role:     "user",
     }
 
-    if err := s.userRepo.Create(user); err != nil {
+    if err := u.userRepo.Create(ctx, user); err != nil {
         return nil, err
     }
 
@@ -57,20 +57,17 @@ func (s *authService) Register(req *model.RegisterRequest) (*model.AuthResponse,
         return nil, err
     }
 
-    return &model.AuthResponse{
+    return &domain.AuthResponse{
         Token: token,
         User:  user.ToUserResponse(),
     }, nil
 }
 
-func (s *authService) Login(req *model.LoginRequest) (*model.AuthResponse, error) {
+func (u *userUsecase) Login(ctx context.Context, req *domain.LoginRequest) (*domain.AuthResponse, error) {
     // Find user by username
-    user, err := s.userRepo.FindByUsername(req.Username)
+    user, err := u.userRepo.FindByUsername(ctx, req.Username)
     if err != nil {
-        if errors.Is(err, gorm.ErrRecordNotFound) {
-            return nil, errors.New("invalid credentials")
-        }
-        return nil, err
+        return nil, errors.New("invalid credentials")
     }
 
     // Compare password
@@ -84,12 +81,12 @@ func (s *authService) Login(req *model.LoginRequest) (*model.AuthResponse, error
         return nil, err
     }
 
-    return &model.AuthResponse{
+    return &domain.AuthResponse{
         Token: token,
         User:  user.ToUserResponse(),
     }, nil
 }
 
-func (s *authService) GetProfile(userID uint) (*model.User, error) {
-    return s.userRepo.FindByID(userID)
+func (u *userUsecase) GetProfile(ctx context.Context, userID uint) (*domain.User, error) {
+    return u.userRepo.FindByID(ctx, userID)
 }

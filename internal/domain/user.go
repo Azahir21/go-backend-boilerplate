@@ -1,20 +1,18 @@
-package model
+package domain
 
 import (
 	"time"
-
-	"gorm.io/gorm"
 )
 
 type User struct {
-    ID        uint           `json:"id" gorm:"primaryKey"`
-    Username  string         `json:"username" gorm:"unique;not null"`
-    Email     string         `json:"email" gorm:"unique;not null"`
-    Password  string         `json:"-" gorm:"not null"`
-    Role      string         `json:"role" gorm:"default:'user'"`
-    CreatedAt time.Time      `json:"created_at"`
-    UpdatedAt time.Time      `json:"updated_at"`
-    DeletedAt gorm.DeletedAt `json:"deleted_at,omitempty" gorm:"index" swaggerignore:"true"`
+    ID        uint       `json:"id"`
+    Username  string     `json:"username"`
+    Email     string     `json:"email"`
+    Password  string     `json:"-"`
+    Role      string     `json:"role"`
+    CreatedAt time.Time  `json:"created_at"`
+    UpdatedAt time.Time  `json:"updated_at"`
+    DeletedAt *time.Time `json:"deleted_at,omitempty"`
 }
 
 type UserResponse struct {
@@ -44,11 +42,6 @@ type AuthResponse struct {
 }
 
 func (u *User) ToUserResponse() UserResponse {
-    var deletedAt *time.Time
-    if u.DeletedAt.Valid {
-        deletedAt = &u.DeletedAt.Time
-    }
-    
     return UserResponse{
         ID:        u.ID,
         Username:  u.Username,
@@ -56,6 +49,6 @@ func (u *User) ToUserResponse() UserResponse {
         Role:      u.Role,
         CreatedAt: u.CreatedAt,
         UpdatedAt: u.UpdatedAt,
-        DeletedAt: deletedAt,
+        DeletedAt: u.DeletedAt,
     }
 }
