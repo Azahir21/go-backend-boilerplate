@@ -39,6 +39,15 @@ server:
     max_connection_age_grace: 5m
     time: 5s
     force_transport_security: false
+  graphql_server:
+    port: "8081"
+    enable: true
+    cors_origins:
+      - "*" # Allow all origins for development
+    read_timeout: 5s
+    write_timeout: 5s
+    idle_timeout: 60s
+    startup_banner: true
 
 jwt:
   secret: your-secret-key-change-this-in-production

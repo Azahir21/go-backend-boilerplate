@@ -50,9 +50,20 @@ type Database struct {
 }
 
 type Server struct {
-	Env  string           `mapstructure:"env"`
-	HTTP HTTPServerConfig `mapstructure:"http_server"`
-	GRPC GRPCServerConfig `mapstructure:"grpc_server"`
+	Env     string              `mapstructure:"env"`
+	HTTP    HTTPServerConfig    `mapstructure:"http_server"`
+	GRPC    GRPCServerConfig    `mapstructure:"grpc_server"`
+	GraphQL GraphQLServerConfig `mapstructure:"graphql_server"`
+}
+
+type GraphQLServerConfig struct {
+	Port          string   `mapstructure:"port"`
+	Enable        bool     `mapstructure:"enable"`
+	CorsOrigins   []string `mapstructure:"cors_origins"`
+	ReadTimeout   string   `mapstructure:"read_timeout"`
+	WriteTimeout  string   `mapstructure:"write_timeout"`
+	IdleTimeout   string   `mapstructure:"idle_timeout"`
+	StartupBanner bool     `mapstructure:"startup_banner"`
 }
 
 type HTTPServerConfig struct {
