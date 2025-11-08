@@ -20,6 +20,7 @@ require (
 	github.com/spf13/viper v1.21.0
 	github.com/swaggo/files v1.0.1
 	github.com/swaggo/gin-swagger v1.6.0
+	github.com/swaggo/swag v1.16.4
 	golang.org/x/crypto v0.43.0
 	google.golang.org/api v0.255.0
 	google.golang.org/grpc v1.76.0
@@ -98,7 +99,6 @@ require (
 	github.com/spf13/pflag v1.0.10 // indirect
 	github.com/spiffe/go-spiffe/v2 v2.5.0 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
-	github.com/swaggo/swag v1.16.4 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	github.com/ugorji/go/codec v1.3.0 // indirect
 	github.com/zclconf/go-cty v1.14.4 // indirect
