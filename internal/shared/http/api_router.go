@@ -122,12 +122,3 @@ func (g *APIRouterGroup) wrap(s EndpointSpec) gin.HandlerFunc {
 		}
 	}
 }
-
-func hasBody(method string) bool {
-	switch method {
-	case http.MethodPost, http.MethodPut, http.MethodPatch:
-		return true
-	default:
-		return false
-	}
-}

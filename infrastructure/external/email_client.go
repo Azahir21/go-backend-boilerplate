@@ -36,11 +36,3 @@ func NewEmailClient(log *logrus.Logger, cfg config.EmailConfig) (EmailClient, er
 		return nil, fmt.Errorf("unsupported email client type: %s", cfg.Type)
 	}
 }
-
-// mockEmailClient is a placeholder for development.
-type mockEmailClient struct{}
-
-func (m *mockEmailClient) SendEmail(to, subject, body string) error {
-	// fmt.Printf("Mock Email Sent to: %s, Subject: %s, Body: %s\n", to, subject, body)
-	return nil
-}
