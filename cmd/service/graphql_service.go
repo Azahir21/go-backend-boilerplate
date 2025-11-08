@@ -3,6 +3,8 @@ package service
 import (
 	"fmt"
 	"net/http"
+	"os"
+	"path/filepath"
 	"time"
 
 	graphqlDelivery "github.com/azahir21/go-backend-boilerplate/internal/user/delivery/graphql"
@@ -14,12 +16,11 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func NewGraphQLServer(log *logrus.Logger, cfg config.GraphQLServerConfig, userUsecase userUsecase.UserUsecase) *http.Server {
-	// Set Gin mode based on environment
-	gin.SetMode(gin.ReleaseMode)
+func NewGraphQLServer(log *logrus.Logger, cfg config.GraphQLServerConfig, userUsecase userUsecase.UserUsecase) (*http.Server, error) {
+	// Gin mode is set in cmd/app/app.go based on environment.
 
 	if cfg.StartupBanner {
-		fmt.Println("🚀 Starting GraphQL server...")
+		log.Info("🚀 Starting GraphQL server...") // Use logrus for banner
 	}
 
 	router := gin.Default()
@@ -37,7 +38,7 @@ func NewGraphQLServer(log *logrus.Logger, cfg config.GraphQLServerConfig, userUs
 	// Create GraphQL schema
 	schema, err := graphqlDelivery.NewGraphQLSchema(log, userUsecase)
 	if err != nil {
-		log.Fatalf("failed to create GraphQL schema: %v", err)
+		return nil, fmt.Errorf("failed to create GraphQL schema: %w", err)
 	}
 
 	// GraphQL endpoint
@@ -63,19 +64,42 @@ func NewGraphQLServer(log *logrus.Logger, cfg config.GraphQLServerConfig, userUs
 		c.JSON(http.StatusOK, result)
 	})
 
-	readTimeout, err := time.ParseDuration(cfg.ReadTimeout)
+	// GraphQL Playground endpoint
+	router.GET("/graphql/playground", func(c *gin.Context) {
+		playgroundHTML, err := os.ReadFile("web/playground.html")
+		if err != nil {
+			log.Errorf("failed to read playground.html: %v", err)
+			c.String(http.StatusInternalServerError, "Failed to load GraphQL Playground")
+			return
+		}
+		c.Data(http.StatusOK, "text/html; charset=utf-8", playgroundHTML)
+	})
+
+	// Serve static assets for GraphQL Playground
+	router.GET("/graphql/playground/css/:filename", func(c *gin.Context) {
+		filename := c.Param("filename")
+		filePath := filepath.Join("web/css", filename)
+		c.File(filePath)
+	})
+	router.GET("/graphql/playground/js/:filename", func(c *gin.Context) {
+		filename := c.Param("filename")
+		filePath := filepath.Join("web/js", filename)
+		c.File(filePath)
+	})
+
+	readTimeout, err := parseDuration(cfg.ReadTimeout, "read timeout")
 	if err != nil {
-		log.Fatalf("invalid read timeout duration: %v", err)
+		return nil, err
 	}
 
-	writeTimeout, err := time.ParseDuration(cfg.WriteTimeout)
+	writeTimeout, err := parseDuration(cfg.WriteTimeout, "write timeout")
 	if err != nil {
-		log.Fatalf("invalid write timeout duration: %v", err)
+		return nil, err
 	}
 
-	idleTimeout, err := time.ParseDuration(cfg.IdleTimeout)
+	idleTimeout, err := parseDuration(cfg.IdleTimeout, "idle timeout")
 	if err != nil {
-		log.Fatalf("invalid idle timeout duration: %v", err)
+		return nil, err
 	}
 
 	server := &http.Server{
@@ -86,5 +110,5 @@ func NewGraphQLServer(log *logrus.Logger, cfg config.GraphQLServerConfig, userUs
 		IdleTimeout:  idleTimeout,
 	}
 
-	return server
+	return server, nil
 }

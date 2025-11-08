@@ -1,11 +1,11 @@
-.PHONY: help build run dev test test-coverage lint fmt vet clean docker-build docker-up docker-down docker-logs docker-shell docker-clean goose-create goose-up goose-down goose-status swag setup
+.PHONY: help build run dev test test-coverage lint fmt vet clean docker-build docker-up docker-down docker-logs docker-shell docker-clean goose-create goose-up goose-down goose-status swag setup generate
 
 # Default target
 help: ## Show this help message
     @echo 'Usage: make [target]'
 	@echo ''
     @echo 'Targets:'
-    @awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "  %-20s %s\n", , $2}' $(MAKEFILE_LIST)
+    @awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "  %-20s %s\n", $1, $2}' $(MAKEFILE_LIST)
 
 # Development commands
 dev: ## Start development server with hot reload (requires Air)
@@ -56,7 +56,14 @@ tidy: ## Tidy dependencies
 # Documentation
 swag: ## Generate Swagger documentation
 	@echo "Generating Swagger documentation..."
-	swag init
+	swag init -dir ./cmd,internal/user/delivery/http -g main.go --parseDependency --parseInternal
+
+# Code generation
+generate: ## Generate code for ent and protobuf
+	@echo "Generating ent code..."
+	go generate ./ent
+	@echo "Generating protobuf code..."
+	protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative proto/user.proto
 
 # Goose CLI commands
 GOOSE_DB_DRIVER=postgres
@@ -116,8 +123,13 @@ setup: ## Setup development environment
 	go install github.com/cosmtrek/air@latest
 	go install github.com/swaggo/swag/cmd/swag@latest
 	go install github.com/pressly/goose/v3/cmd/goose@latest
+	go install golang.org/x/tools/cmd/goimports@latest
+	go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
 	@echo "Generating Swagger documentation..."
 	swag init
+	@echo "Generating ent and protobuf code..."
+	make generate
 	@echo "Development environment setup complete!"
 
 # Cleanup
