@@ -6,6 +6,8 @@ import (
 	"io"
 	"time"
 
+	// TODO: Migrate to aws-sdk-go-v2 before July 31, 2025
+	// See: https://aws.amazon.com/blogs/developer/announcing-end-of-support-for-aws-sdk-for-go-v1-on-july-31-2025/
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
@@ -34,7 +36,7 @@ func NewS3Storage(cfg S3StorageConfig) (*S3Storage, error) {
 
 	sess, err := session.NewSession(&aws.Config{
 		Region: aws.String(cfg.Region),
-	},)
+	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create AWS session: %w", err)
 	}
@@ -42,7 +44,7 @@ func NewS3Storage(cfg S3StorageConfig) (*S3Storage, error) {
 	return &S3Storage{
 		s3Client: s3.New(sess),
 		bucket:   cfg.Bucket,
-	},	nil
+	}, nil
 }
 
 // Upload saves a file to S3.

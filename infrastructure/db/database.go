@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/azahir21/go-backend-boilerplate/ent"
 	"github.com/azahir21/go-backend-boilerplate/pkg/config"
@@ -34,17 +35,21 @@ func NewEntClient(log *logrus.Logger, cfg *config.Config) (*ent.Client, error) {
 
 	client, err := ent.Open(cfg.DB.Driver, dsn)
 	if err != nil {
-		return nil, fmt.Errorf("failed opening connection to %s: %v", cfg.DB.Driver, err)
+		return nil, fmt.Errorf("failed opening connection to %s: %w", cfg.DB.Driver, err)
 	}
 
 	if cfg.DB.AutoMigrate {
-		// Run the auto migration tool.
-		if err := client.Schema.Create(context.Background()); err != nil {
-			return nil, fmt.Errorf("failed creating schema resources: %v", err)
+		// Run the auto migration tool with timeout
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+
+		if err := client.Schema.Create(ctx); err != nil {
+			client.Close() // Close client on migration failure
+			return nil, fmt.Errorf("failed creating schema resources: %w", err)
 		}
-		log.Info("Ent auto-migration completed.")
+		log.Info("Database schema migration completed successfully")
 	}
 
-	log.Infof("Database connection established with driver: %s", cfg.DB.Driver)
+	log.Infof("Database connection established (driver: %s, database: %s)", cfg.DB.Driver, cfg.DB.Name)
 	return client, nil
 }

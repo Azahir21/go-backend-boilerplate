@@ -12,8 +12,8 @@ import (
 
 // GCSStorageConfig holds configuration for GCS storage.
 type GCSStorageConfig struct {
-	ProjectID      string `mapstructure:"project_id"`
-	Bucket         string `mapstructure:"bucket"`
+	ProjectID       string `mapstructure:"project_id"`
+	Bucket          string `mapstructure:"bucket"`
 	CredentialsFile string `mapstructure:"credentials_file"`
 }
 
@@ -37,7 +37,7 @@ func NewGCSStorage(ctx context.Context, cfg GCSStorageConfig) (*GCSStorage, erro
 	return &GCSStorage{
 		client: client,
 		bucket: cfg.Bucket,
-	},	nil
+	}, nil
 }
 
 // Upload saves a file to GCS.

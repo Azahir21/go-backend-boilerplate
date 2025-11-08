@@ -28,8 +28,15 @@ func (r *UserResolver) GetUserResolver(p graphql.ResolveParams) (interface{}, er
 		return nil, errors.New("invalid user ID")
 	}
 
-	user, err := r.userUsecase.GetProfile(context.Background(), uint(id))
+	// Use context from GraphQL params if available
+	ctx := p.Context
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	user, err := r.userUsecase.GetProfile(ctx, uint(id))
 	if err != nil {
+		r.log.Errorf("failed to get user profile for ID %d: %v", id, err)
 		return nil, err
 	}
 
@@ -51,8 +58,15 @@ func (r *UserResolver) RegisterUserResolver(p graphql.ResolveParams) (interface{
 		Password: password,
 	}
 
-	authResponse, err := r.userUsecase.Register(context.Background(), req)
+	// Use context from GraphQL params if available
+	ctx := p.Context
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	authResponse, err := r.userUsecase.Register(ctx, req)
 	if err != nil {
+		r.log.Errorf("failed to register user %s: %v", username, err)
 		return nil, err
 	}
 
@@ -72,8 +86,15 @@ func (r *UserResolver) LoginUserResolver(p graphql.ResolveParams) (interface{}, 
 		Password: password,
 	}
 
-	authResponse, err := r.userUsecase.Login(context.Background(), req)
+	// Use context from GraphQL params if available
+	ctx := p.Context
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	authResponse, err := r.userUsecase.Login(ctx, req)
 	if err != nil {
+		r.log.Errorf("failed to login user %s: %v", username, err)
 		return nil, err
 	}
 

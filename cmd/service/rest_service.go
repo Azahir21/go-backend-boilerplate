@@ -1,7 +1,6 @@
 package service
 
 import (
-	"fmt"
 	"net/http"
 	"time"
 
@@ -17,15 +16,6 @@ import (
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
-
-// parseDuration is a helper to parse duration strings and return an error.
-func parseDuration(durationStr, fieldName string) (time.Duration, error) {
-	d, err := time.ParseDuration(durationStr)
-	if err != nil {
-		return 0, fmt.Errorf("invalid %s duration: %w", fieldName, err)
-	}
-	return d, nil
-}
 
 func NewRestServer(log *logrus.Logger, cfg config.HTTPServerConfig, userUsecase userUsecase.UserUsecase) (*http.Server, error) {
 	// Gin mode is set in cmd/app/app.go based on environment.

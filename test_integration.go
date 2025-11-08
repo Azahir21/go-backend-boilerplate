@@ -76,7 +76,7 @@ func main() {
 
 	// --- Test gRPC API ---
 	log.Info("Testing gRPC API...")
-	grpcConn, err := grpc.Dial("localhost:9000", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	grpcConn, err := grpc.NewClient("localhost:9000", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Errorf("gRPC dial failed: %v", err)
 	} else {

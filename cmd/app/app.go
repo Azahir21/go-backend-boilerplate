@@ -16,6 +16,7 @@ import (
 	"github.com/azahir21/go-backend-boilerplate/infrastructure/db"
 	"github.com/azahir21/go-backend-boilerplate/infrastructure/external"
 	"github.com/azahir21/go-backend-boilerplate/infrastructure/storage"
+	"github.com/azahir21/go-backend-boilerplate/internal/shared/helper"
 	"github.com/azahir21/go-backend-boilerplate/internal/shared/unitofwork"
 	userRepoImpl "github.com/azahir21/go-backend-boilerplate/internal/user/repository/implementation"
 	userUsecase "github.com/azahir21/go-backend-boilerplate/internal/user/usecase"
@@ -52,6 +53,9 @@ func NewApplication(log *logrus.Logger) (*Application, error) {
 	if cfg.Server.Env == "production" || cfg.Server.Env == "staging" {
 		gin.SetMode(gin.ReleaseMode)
 	}
+
+	// Initialize JWT helper
+	helper.InitJWT(cfg.JWT.Secret, cfg.JWT.ExpiryHours)
 
 	// Initialize database
 	dbClient, err := db.NewEntClient(log, cfg)
@@ -152,7 +156,11 @@ func (app *Application) setupServers() error {
 	}
 
 	if app.Config.Server.GRPC.Enable {
-		app.GRPCServer = service.NewGrpcServer(app.Log, app.Config.Server.GRPC, app.UserUsecase)
+		grpcServer, err := service.NewGrpcServer(app.Log, app.Config.Server.GRPC, app.UserUsecase)
+		if err != nil {
+			return fmt.Errorf("failed to create gRPC server: %w", err)
+		}
+		app.GRPCServer = grpcServer
 	}
 
 	if app.Config.Server.GraphQL.Enable {
