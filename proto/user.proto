@@ -1,0 +1,42 @@
+syntax = "proto3";
+
+package proto;
+
+option go_package = "github.com/azahir21/go-backend-boilerplate/proto";
+
+import "google/protobuf/timestamp.proto";
+
+message User {
+  uint32 id = 1;
+  string username = 2;
+  string email = 3;
+  string role = 4;
+  google.protobuf.Timestamp created_at = 5;
+  google.protobuf.Timestamp updated_at = 6;
+}
+
+message RegisterRequest {
+  string username = 1;
+  string email = 2;
+  string password = 3;
+}
+
+message LoginRequest {
+  string username = 1;
+  string password = 2;
+}
+
+message AuthResponse {
+  string token = 1;
+  User user = 2;
+}
+
+message GetProfileRequest {
+  uint32 user_id = 1;
+}
+
+service UserService {
+  rpc Register(RegisterRequest) returns (AuthResponse) {};
+  rpc Login(LoginRequest) returns (AuthResponse) {};
+  rpc GetProfile(GetProfileRequest) returns (User) {};
+}

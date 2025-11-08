@@ -1,11 +1,11 @@
-.PHONY: help build run dev test test-coverage lint fmt vet clean docker-build docker-up docker-down docker-logs docker-shell docker-clean migrate seed swag setup
+.PHONY: help build run dev test test-coverage lint fmt vet clean docker-build docker-up docker-down docker-logs docker-shell docker-clean goose-create goose-up goose-down goose-status swag setup generate
 
 # Default target
 help: ## Show this help message
     @echo 'Usage: make [target]'
 	@echo ''
     @echo 'Targets:'
-    @awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "  %-20s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
+    @awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "  %-20s %s\n", $1, $2}' $(MAKEFILE_LIST)
 
 # Development commands
 dev: ## Start development server with hot reload (requires Air)
@@ -56,16 +56,47 @@ tidy: ## Tidy dependencies
 # Documentation
 swag: ## Generate Swagger documentation
 	@echo "Generating Swagger documentation..."
-	swag init
+	@echo "Including directories: ./cmd, internal/user/delivery/http"
+	@echo "Update the directories if your handlers are located elsewhere."
+	swag init -dir ./cmd,internal/user/delivery/http -g main.go --parseDependency --parseInternal
 
-# Database commands
-migrate: ## Run database migrations (GORM auto-migrate)
-	@echo "Running database migrations..."
-	go run scripts/migrate.go
+# Code generation
+generate: ## Generate code for ent and protobuf
+	@echo "Generating ent code..."
+	go generate ./ent
+	@echo "Generating protobuf code..."
+	protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative proto/user.proto
 
-seed: ## Seed the database with sample data
-	@echo "Seeding database..."
-	go run scripts/seed.go
+
+goose-create: ## Create a new Goose migration file
+	@echo "Creating new Goose migration..."
+	goose create ${NAME} sql
+
+goose-up: ## Apply pending Goose migrations
+	@echo "Applying Goose migrations..."
+	goose up
+
+goose-down: ## Rollback the last Goose migration
+	@echo "Rolling back last Goose migration..."
+	goose down
+goose-status: ## Check Goose migration status
+	@echo "Checking Goose migration status..."
+	@echo "Make sure the 'GOOSE_DB_STRING', 'GOOSE_DRIVER', and 'GOOSE_MIGRATION_DIR' environment variables are set."
+	@echo "Checking .env and GOOSE_DB_STRING..."
+	@if [ -f .env ]; then \
+	  echo ".env found — loading variables..."; \
+	  set -a; . .env; set +a; \
+	  goose status; \
+	else \
+	  if [ -n "$$GOOSE_DB_STRING" ]; then \
+		echo "GOOSE_DB_STRING is set in environment — running goose status..."; \
+		goose status; \
+	  else \
+		echo ".env not found and GOOSE_DB_STRING is not set."; \
+		echo "Create a .env from .env.example or export GOOSE_DB_STRING in your shell."; \
+		exit 1; \
+	  fi; \
+	fi
 
 # Docker commands
 docker-build: ## Build Docker image
@@ -80,9 +111,11 @@ docker-down: ## Stop Docker containers
 	@echo "Stopping Docker containers..."
 	docker-compose down
 
+
 docker-logs: ## View Docker container logs
 	@echo "Viewing container logs..."
 	docker-compose logs -f app
+
 
 docker-shell: ## Access application container shell
 	@echo "Accessing container shell..."
@@ -100,10 +133,16 @@ setup: ## Setup development environment
 	@echo "Please edit .env file with your configuration"
 	go mod tidy
 	@echo "Installing development tools..."
-	go install github.com/cosmtrek/air@latest
+	go install github.com/air-verse/air@latest
 	go install github.com/swaggo/swag/cmd/swag@latest
+	go install github.com/pressly/goose/v3/cmd/goose@latest
+	go install golang.org/x/tools/cmd/goimports@latest
+	go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
 	@echo "Generating Swagger documentation..."
-	swag init
+	$(MAKE) swag
+	@echo "Generating ent and protobuf code..."
+	make generate
 	@echo "Development environment setup complete!"
 
 # Cleanup

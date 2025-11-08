@@ -45,7 +45,8 @@ COPY --from=builder /build/main /go/bin/main
 USER appuser
 
 # Expose port
-EXPOSE 8080
+# Expose ports
+EXPOSE 8080 8090 8081
 
 # Run the binary
 ENTRYPOINT ["/go/bin/main"]
