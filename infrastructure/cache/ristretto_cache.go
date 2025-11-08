@@ -24,35 +24,40 @@ func NewRistrettoCache(log *logrus.Logger, cfg config.RistrettoConfig) (*Ristret
 		Metrics:     cfg.Metrics,
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to initialize ristretto cache: %w", err)
 	}
 
-	log.Info("Ristretto cache initialized")
+	log.Info("Ristretto in-memory cache initialized")
 	return &RistrettoCache{cached: cached, log: log}, nil
 }
 
 func (r *RistrettoCache) Set(ctx context.Context, key string, value interface{}, ttlSeconds int) error {
 	data, err := json.Marshal(value)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal cache value for key %s: %w", key, err)
 	}
 
-	r.cached.SetWithTTL(key, data, 1, time.Duration(ttlSeconds)*time.Second)
+	if !r.cached.SetWithTTL(key, data, 1, time.Duration(ttlSeconds)*time.Second) {
+		return fmt.Errorf("failed to set cache key %s: cache rejected the entry", key)
+	}
 	return nil
 }
 
 func (r *RistrettoCache) Get(ctx context.Context, key string, dest interface{}) error {
 	value, found := r.cached.Get(key)
 	if !found {
-		return fmt.Errorf("cache miss for key %s", key)
+		return fmt.Errorf("cache key not found: %s", key)
 	}
 
 	data, ok := value.([]byte)
 	if !ok {
-		return fmt.Errorf("cache value for key %s is not a byte slice", key)
+		return fmt.Errorf("cache value for key %s has unexpected type: %T", key, value)
 	}
 
-	return json.Unmarshal(data, dest)
+	if err := json.Unmarshal(data, dest); err != nil {
+		return fmt.Errorf("failed to unmarshal cache value for key %s: %w", key, err)
+	}
+	return nil
 }
 
 func (r *RistrettoCache) Del(ctx context.Context, key string) error {

@@ -34,7 +34,7 @@ func NewS3Storage(cfg S3StorageConfig) (*S3Storage, error) {
 
 	sess, err := session.NewSession(&aws.Config{
 		Region: aws.String(cfg.Region),
-	},)
+	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create AWS session: %w", err)
 	}
@@ -42,7 +42,7 @@ func NewS3Storage(cfg S3StorageConfig) (*S3Storage, error) {
 	return &S3Storage{
 		s3Client: s3.New(sess),
 		bucket:   cfg.Bucket,
-	},	nil
+	}, nil
 }
 
 // Upload saves a file to S3.

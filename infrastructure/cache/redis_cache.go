@@ -3,6 +3,7 @@ package cache
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/azahir21/go-backend-boilerplate/pkg/config"
@@ -22,31 +23,47 @@ func NewRedisCache(log *logrus.Logger, cfg config.RedisConfig) (*RedisCache, err
 		DB:       cfg.DB,
 	})
 
-	_, err := client.Ping(context.Background()).Result()
-	if err != nil {
-		return nil, err
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if _, err := client.Ping(ctx).Result(); err != nil {
+		return nil, fmt.Errorf("failed to connect to redis at %s: %w", cfg.Addr, err)
 	}
 
-	log.Info("Redis cache initialized")
+	log.Infof("Redis cache initialized at %s", cfg.Addr)
 	return &RedisCache{client: client, log: log}, nil
 }
 
 func (r *RedisCache) Set(ctx context.Context, key string, value interface{}, ttlSeconds int) error {
 	data, err := json.Marshal(value)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal cache value for key %s: %w", key, err)
 	}
-	return r.client.Set(ctx, key, data, time.Duration(ttlSeconds)*time.Second).Err()
+
+	if err := r.client.Set(ctx, key, data, time.Duration(ttlSeconds)*time.Second).Err(); err != nil {
+		return fmt.Errorf("failed to set cache key %s: %w", key, err)
+	}
+	return nil
 }
 
 func (r *RedisCache) Get(ctx context.Context, key string, dest interface{}) error {
 	data, err := r.client.Get(ctx, key).Bytes()
 	if err != nil {
-		return err
+		if err == redis.Nil {
+			return fmt.Errorf("cache key not found: %s", key)
+		}
+		return fmt.Errorf("failed to get cache key %s: %w", key, err)
 	}
-	return json.Unmarshal(data, dest)
+
+	if err := json.Unmarshal(data, dest); err != nil {
+		return fmt.Errorf("failed to unmarshal cache value for key %s: %w", key, err)
+	}
+	return nil
 }
 
 func (r *RedisCache) Del(ctx context.Context, key string) error {
-	return r.client.Del(ctx, key).Err()
+	if err := r.client.Del(ctx, key).Err(); err != nil {
+		return fmt.Errorf("failed to delete cache key %s: %w", key, err)
+	}
+	return nil
 }

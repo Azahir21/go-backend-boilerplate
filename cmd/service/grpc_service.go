@@ -13,40 +13,38 @@ import (
 	"google.golang.org/grpc/keepalive"
 )
 
-func NewGrpcServer(log *logrus.Logger, cfg config.GRPCServerConfig, userUsecase userUsecase.UserUsecase) *grpc.Server {
-
+func NewGrpcServer(log *logrus.Logger, cfg config.GRPCServerConfig, userUsecase userUsecase.UserUsecase) (*grpc.Server, error) {
 	maxConnectionIdle, err := time.ParseDuration(cfg.MaxConnectionIdle)
 	if err != nil {
-		log.Fatalf("invalid max connection idle duration: %v", err)
+		return nil, fmt.Errorf("invalid max connection idle duration: %w", err)
 	}
 
 	timeDuration, err := time.ParseDuration(cfg.Time)
 	if err != nil {
-		log.Fatalf("invalid time duration: %v", err)
+		return nil, fmt.Errorf("invalid time duration: %w", err)
 	}
 
 	timeout, err := time.ParseDuration(cfg.Timeout)
 	if err != nil {
-		log.Fatalf("invalid timeout duration: %v", err)
+		return nil, fmt.Errorf("invalid timeout duration: %w", err)
 	}
 
 	maxConnectionAge, err := time.ParseDuration(cfg.MaxConnectionAge)
 	if err != nil {
-		log.Fatalf("invalid max connection age duration: %v", err)
+		return nil, fmt.Errorf("invalid max connection age duration: %w", err)
 	}
 
 	maxConnectionAgeGrace, err := time.ParseDuration(cfg.MaxConnectionAgeGrace)
 	if err != nil {
-		log.Fatalf("invalid max connection age grace duration: %v", err)
+		return nil, fmt.Errorf("invalid max connection age grace duration: %w", err)
 	}
-
 
 	grpcServer := grpc.NewServer(
 		grpc.KeepaliveParams(keepalive.ServerParameters{
-			MaxConnectionIdle: maxConnectionIdle,
-			Time:              timeDuration,
-			Timeout:           timeout,
-			MaxConnectionAge:  maxConnectionAge,
+			MaxConnectionIdle:     maxConnectionIdle,
+			Time:                  timeDuration,
+			Timeout:               timeout,
+			MaxConnectionAge:      maxConnectionAge,
 			MaxConnectionAgeGrace: maxConnectionAgeGrace,
 		}),
 	)
@@ -55,8 +53,8 @@ func NewGrpcServer(log *logrus.Logger, cfg config.GRPCServerConfig, userUsecase 
 	proto.RegisterUserServiceServer(grpcServer, userGrpcHandler)
 
 	if cfg.Enable {
-		fmt.Println("🚀 Starting gRPC server...")
+		log.Info("gRPC server configured successfully")
 	}
 
-	return grpcServer
+	return grpcServer, nil
 }

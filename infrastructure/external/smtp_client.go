@@ -34,4 +34,3 @@ func (s *SmtpClient) SendEmail(to, subject, body string) error {
 
 	return nil
 }
-
