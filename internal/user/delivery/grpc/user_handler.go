@@ -2,7 +2,6 @@ package grpc
 
 import (
 	"context"
-	"errors"
 
 	"github.com/azahir21/go-backend-boilerplate/internal/user/delivery/http/dto"
 	"github.com/azahir21/go-backend-boilerplate/internal/user/usecase"
@@ -32,8 +31,8 @@ func (h *UserHandler) Register(ctx context.Context, req *proto.RegisterRequest) 
 
 	authResponse, err := h.userUsecase.Register(ctx, registerReq)
 	if err != nil {
-		h.log.Errorf("gRPC Register failed: %v", err)
-		return nil, errors.New("registration failed")
+		h.log.Errorf("gRPC Register failed for user %s: %v", req.Username, err)
+		return nil, err
 	}
 
 	return &proto.AuthResponse{
@@ -55,8 +54,8 @@ func (h *UserHandler) Login(ctx context.Context, req *proto.LoginRequest) (*prot
 
 	authResponse, err := h.userUsecase.Login(ctx, loginReq)
 	if err != nil {
-		h.log.Errorf("gRPC Login failed: %v", err)
-		return nil, errors.New("login failed")
+		h.log.Errorf("gRPC Login failed for user %s: %v", req.Username, err)
+		return nil, err
 	}
 
 	return &proto.AuthResponse{
@@ -73,8 +72,8 @@ func (h *UserHandler) Login(ctx context.Context, req *proto.LoginRequest) (*prot
 func (h *UserHandler) GetProfile(ctx context.Context, req *proto.GetProfileRequest) (*proto.User, error) {
 	user, err := h.userUsecase.GetProfile(ctx, uint(req.UserId))
 	if err != nil {
-		h.log.Errorf("gRPC GetProfile failed: %v", err)
-		return nil, errors.New("user not found")
+		h.log.Errorf("gRPC GetProfile failed for user ID %d: %v", req.UserId, err)
+		return nil, err
 	}
 
 	return &proto.User{
