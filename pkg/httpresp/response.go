@@ -8,9 +8,9 @@ import (
 
 // Response represents the standard JSON response structure for the API
 type Response struct {
-	Status  string      `json:"status"`            // HTTP status text (e.g., "OK", "Bad Request")
-	Message string      `json:"message"`           // Human-readable message
-	Data    interface{} `json:"data,omitempty"`    // Response payload (optional)
+	Status  string      `json:"status"`         // HTTP status text (e.g., "OK", "Bad Request")
+	Message string      `json:"message"`        // Human-readable message
+	Data    interface{} `json:"data,omitempty"` // Response payload (optional)
 }
 
 // JSON sends a JSON response with a standard structure.
