@@ -1,6 +1,8 @@
 package config
 
 import (
+	"fmt"
+
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
@@ -147,6 +149,9 @@ type EmailConfig struct {
 }
 
 // LoadConfig loads configuration from file or environment variables.
+// It first reads config.yaml (base configuration), then merges environment-specific
+// config (e.g., config.development.yaml), and finally allows environment variables
+// to override any setting.
 func LoadConfig(log *logrus.Logger) (*Config, error) {
 	viper.AddConfigPath("./")
 	viper.SetConfigName("config")
@@ -162,16 +167,19 @@ func LoadConfig(log *logrus.Logger) (*Config, error) {
 	if env == "" {
 		env = "development" // Default environment
 	}
+
+	// Merge environment-specific config if it exists
 	viper.SetConfigName("config." + env)
 	if err := viper.MergeInConfig(); err != nil {
 		log.Warnf("Error reading environment-specific config file (config.%s.yaml): %v", env, err)
 	}
 
+	// Allow environment variables to override config file settings
 	viper.AutomaticEnv()
 
 	var cfg Config
 	if err := viper.Unmarshal(&cfg); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to unmarshal config: %w", err)
 	}
 
 	return &cfg, nil
