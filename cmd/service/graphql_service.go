@@ -7,7 +7,8 @@ import (
 	"path/filepath"
 	"time"
 
-	graphqlDelivery "github.com/azahir21/go-backend-boilerplate/internal/user/delivery/graphql"
+	sharedGraphQL "github.com/azahir21/go-backend-boilerplate/internal/shared/graphql"
+	userGraphQL "github.com/azahir21/go-backend-boilerplate/internal/user/delivery/graphql"
 	userUsecase "github.com/azahir21/go-backend-boilerplate/internal/user/usecase"
 	"github.com/azahir21/go-backend-boilerplate/pkg/config"
 	"github.com/gin-contrib/cors"
@@ -36,7 +37,8 @@ func NewGraphQLServer(log *logrus.Logger, cfg config.GraphQLServerConfig, userUs
 	}))
 
 	// Create GraphQL schema
-	schema, err := graphqlDelivery.NewGraphQLSchema(log, userUsecase)
+	userSchemaBuilder := userGraphQL.NewUserSchemaBuilder(log, userUsecase)
+	schema, err := sharedGraphQL.NewRootSchema([]sharedGraphQL.SchemaBuilder{userSchemaBuilder})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create GraphQL schema: %w", err)
 	}
