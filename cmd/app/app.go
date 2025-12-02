@@ -96,7 +96,7 @@ func NewApplication(log *logrus.Logger) (*Application, error) {
 		ServiceName:    "go-backend-boilerplate",
 		ServiceVersion: "1.0.0",
 		Environment:    cfg.Server.Env,
-		TempoEndpoint:  getEnvOrDefault("TEMPO_ENDPOINT", "localhost:4318"),
+		TempoEndpoint:  getEnvOrDefault("TEMPO_ENDPOINT", "http://localhost:4318"),
 		EnableTracing:  true,
 		EnableMetrics:  true,
 	}, log)

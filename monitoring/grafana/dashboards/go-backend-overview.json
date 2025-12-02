@@ -281,8 +281,13 @@
       "targets": [
         {
           "expr": "go_goroutines",
-          "legendFormat": "Goroutines",
+          "legendFormat": "Goroutines (runtime)",
           "refId": "A"
+        },
+        {
+          "expr": "goroutine_count",
+          "legendFormat": "Goroutines (custom)",
+          "refId": "B"
         }
       ],
       "title": "Goroutines",

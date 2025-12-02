@@ -145,6 +145,8 @@ func (m *Metrics) collectRuntimeMetrics() {
 	ticker := time.NewTicker(15 * time.Second)
 	defer ticker.Stop()
 
+	lastCollectionTime := m.startTime
+
 	for range ticker.C {
 		ctx := context.Background()
 
@@ -152,9 +154,11 @@ func (m *Metrics) collectRuntimeMetrics() {
 		goroutines := int64(runtime.NumGoroutine())
 		m.GoroutineCount.Record(ctx, goroutines)
 
-		// Collect service uptime
-		uptime := time.Since(m.startTime).Seconds()
-		m.ServiceUptime.Add(ctx, uptime)
+		// Collect service uptime - only add the elapsed time since last collection
+		now := time.Now()
+		elapsed := now.Sub(lastCollectionTime).Seconds()
+		m.ServiceUptime.Add(ctx, elapsed)
+		lastCollectionTime = now
 	}
 }
 
@@ -189,7 +193,12 @@ func (m *Metrics) RecordDBQuery(ctx context.Context, operation string, duration 
 
 // UpdateDBConnectionStats updates database connection pool statistics
 func (m *Metrics) UpdateDBConnectionStats(ctx context.Context, active, idle, max int64) {
-	m.DBConnectionsActive.Add(ctx, active)
-	m.DBConnectionsIdle.Add(ctx, idle)
+	// Note: For UpDownCounter, we should track changes, not absolute values
+	// However, since we don't have the previous values, we can't compute the delta
+	// This method is kept for API compatibility but may not work as expected
+	// Consider using callback-based gauges in the future for these metrics
 	m.DBConnectionsMax.Record(ctx, max)
+	
+	// TODO: Implement proper delta tracking for active/idle connections
+	// or use callback-based Observable Gauges instead of UpDownCounters
 }
