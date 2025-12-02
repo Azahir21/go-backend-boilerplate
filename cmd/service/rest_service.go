@@ -10,7 +10,10 @@ import (
 	"github.com/azahir21/go-backend-boilerplate/pkg/config"
 
 	"github.com/gin-contrib/cors"
+	"github.com/gin-gonic/gin"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
@@ -32,6 +35,9 @@ func NewRestServer(log *logrus.Logger, cfg config.HTTPServerConfig, modules []mo
 	// Initialize Gin server and register routes
 	router := sharedHttp.NewServer(httpRouters...)
 
+	// Add OpenTelemetry middleware for tracing
+	router.Use(otelgin.Middleware("go-backend-boilerplate"))
+
 	// Configure CORS
 	router.Use(cors.New(cors.Config{
 		AllowOrigins:     cfg.CorsOrigins,
@@ -41,6 +47,9 @@ func NewRestServer(log *logrus.Logger, cfg config.HTTPServerConfig, modules []mo
 		AllowCredentials: true,
 		MaxAge:           12 * time.Hour,
 	}))
+
+	// Prometheus metrics endpoint
+	router.GET("/metrics", gin.WrapH(promhttp.Handler()))
 
 	// Swagger endpoint
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler, ginSwagger.URL("http://localhost:"+cfg.Port+"/swagger/doc.json")))
