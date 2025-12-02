@@ -27,6 +27,8 @@ require (
 	google.golang.org/protobuf v1.36.10
 )
 
+require github.com/joho/godotenv v1.5.1 // indirect
+
 require (
 	ariga.io/atlas v0.32.1-0.20250325101103-175b25e1c1b9 // indirect
 	cel.dev/expr v0.24.0 // indirect

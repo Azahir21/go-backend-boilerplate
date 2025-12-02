@@ -2,7 +2,10 @@ package config
 
 import (
 	"fmt"
+	"os"
+	"strings"
 
+	"github.com/joho/godotenv"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
@@ -153,17 +156,19 @@ type EmailConfig struct {
 // config (e.g., config.development.yaml), and finally allows environment variables
 // to override any setting.
 func LoadConfig(log *logrus.Logger) (*Config, error) {
-	viper.AddConfigPath("./")
-	viper.SetConfigName("config")
 	viper.SetConfigType("yaml")
+	viper.SetConfigName("config")
+	viper.AddConfigPath("./config")
+	viper.AddConfigPath(".")
 
-	// Read default config
-	if err := viper.ReadInConfig(); err != nil {
-		log.Warnf("Error reading default config file: %v", err)
+	// Load default .env file
+	if err := godotenv.Load(); err != nil {
+		log.Warnf("Error loading default .env file: %v", err)
 	}
 
-	// Check for environment-specific config
-	env := viper.GetString("server.env")
+	// Get environment from env var
+	env := os.Getenv("SERVER_ENV")
+	log.Infof("Configuration loaded for environment: %s", env)
 	if env == "" {
 		env = "development" // Default environment
 	}
@@ -175,6 +180,7 @@ func LoadConfig(log *logrus.Logger) (*Config, error) {
 	}
 
 	// Allow environment variables to override config file settings
+	viper.SetEnvKeyReplacer(strings.NewReplacer(`.`, `_`))
 	viper.AutomaticEnv()
 
 	var cfg Config
