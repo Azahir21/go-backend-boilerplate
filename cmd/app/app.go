@@ -44,6 +44,7 @@ type Application struct {
 	GraphQLServer  *http.Server
 	OtelProvider   *observability.Provider
 	Metrics        *observability.Metrics
+	DBStatsCollector *observability.DBStatsCollector
 }
 
 // NewApplication initializes and returns a new Application instance.
@@ -109,6 +110,14 @@ func NewApplication(log *logrus.Logger) (*Application, error) {
 		log.Warnf("Failed to initialize custom metrics: %v. Continuing without custom metrics.", err)
 	}
 
+	// Initialize database stats collector
+	var dbStatsCollector *observability.DBStatsCollector
+	if metrics != nil {
+		dbStatsCollector = observability.NewDBStatsCollector(dbClient, metrics, log)
+		dbStatsCollector.Start()
+		log.Info("Database stats collector started")
+	}
+
 	// Initialize unit of work
 	uow := unitofwork.NewUnitOfWork(dbClient)
 
@@ -126,18 +135,19 @@ func NewApplication(log *logrus.Logger) (*Application, error) {
 	httpModules, grpcModules, graphqlModules := registerModules(deps)
 
 	return &Application{
-		Log:            log,
-		Config:         cfg,
-		DBClient:       dbClient,
-		Cache:          appCache,
-		Storage:        appStorage,
-		EmailClient:    emailClient,
-		Dependencies:   deps,
-		HTTPModules:    httpModules,
-		GRPCModules:    grpcModules,
-		GraphQLModules: graphqlModules,
-		OtelProvider:   otelProvider,
-		Metrics:        metrics,
+		Log:              log,
+		Config:           cfg,
+		DBClient:         dbClient,
+		Cache:            appCache,
+		Storage:          appStorage,
+		EmailClient:      emailClient,
+		Dependencies:     deps,
+		HTTPModules:      httpModules,
+		GRPCModules:      grpcModules,
+		GraphQLModules:   graphqlModules,
+		OtelProvider:     otelProvider,
+		Metrics:          metrics,
+		DBStatsCollector: dbStatsCollector,
 	}, nil
 }
 
@@ -174,6 +184,12 @@ func Run(log *logrus.Logger) error {
 	}
 	if app.GraphQLServer != nil {
 		app.GraphQLServer.Shutdown(ctx)
+	}
+	
+	// Stop database stats collector
+	if app.DBStatsCollector != nil {
+		app.DBStatsCollector.Stop()
+		app.Log.Info("Database stats collector stopped")
 	}
 	
 	// Shutdown observability
