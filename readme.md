@@ -24,6 +24,14 @@ A robust and scalable Go backend boilerplate designed to jumpstart your next pro
     -   Pluggable storage module with support for Local filesystem, AWS S3, and Google Cloud Storage (GCS).
 -   **Email Services**:
     -   Transactional email support with SMTP and SendGrid integrations.
+-   **Observability & Monitoring**:
+    -   **OpenTelemetry** integration for metrics and distributed tracing
+    -   **Prometheus** for metrics collection and storage
+    -   **Grafana** for visualization and dashboards
+    -   **Loki** for log aggregation
+    -   **Tempo** for distributed tracing
+    -   Pre-configured alerts and dashboards
+    -   See [docs/monitoring.md](docs/monitoring.md) for details
 -   **Structured Logging**: Implemented with `logrus` for clear and customizable logging.
 -   **Configuration Management**: Centralized configuration using Viper, supporting YAML files and environment variables.
 -   **Unit of Work Pattern**: Ensures atomic database operations.

@@ -20,6 +20,7 @@ import (
 	"github.com/azahir21/go-backend-boilerplate/internal/shared/module"
 	"github.com/azahir21/go-backend-boilerplate/internal/shared/unitofwork"
 	"github.com/azahir21/go-backend-boilerplate/pkg/config"
+	"github.com/azahir21/go-backend-boilerplate/pkg/observability"
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
@@ -41,6 +42,9 @@ type Application struct {
 	HTTPServer     *http.Server
 	GRPCServer     *grpc.Server
 	GraphQLServer  *http.Server
+	OtelProvider   *observability.Provider
+	Metrics        *observability.Metrics
+	DBStatsCollector *observability.DBStatsCollector
 }
 
 // NewApplication initializes and returns a new Application instance.
@@ -86,6 +90,34 @@ func NewApplication(log *logrus.Logger) (*Application, error) {
 		return nil, fmt.Errorf("failed to initialize email client: %w", err)
 	}
 
+	// Initialize OpenTelemetry observability
+	ctx := context.Background()
+	otelProvider, err := observability.NewProvider(ctx, observability.Config{
+		ServiceName:    "go-backend-boilerplate",
+		ServiceVersion: "1.0.0",
+		Environment:    cfg.Server.Env,
+		TempoEndpoint:  getEnvOrDefault("TEMPO_ENDPOINT", "http://localhost:4318"),
+		EnableTracing:  true,
+		EnableMetrics:  true,
+	}, log)
+	if err != nil {
+		log.Warnf("Failed to initialize observability: %v. Continuing without full observability.", err)
+	}
+
+	// Initialize custom metrics
+	metrics, err := observability.NewMetrics(log)
+	if err != nil {
+		log.Warnf("Failed to initialize custom metrics: %v. Continuing without custom metrics.", err)
+	}
+
+	// Initialize database stats collector
+	var dbStatsCollector *observability.DBStatsCollector
+	if metrics != nil {
+		dbStatsCollector = observability.NewDBStatsCollector(dbClient, metrics, log)
+		dbStatsCollector.Start()
+		log.Info("Database stats collector started")
+	}
+
 	// Initialize unit of work
 	uow := unitofwork.NewUnitOfWork(dbClient)
 
@@ -103,16 +135,19 @@ func NewApplication(log *logrus.Logger) (*Application, error) {
 	httpModules, grpcModules, graphqlModules := registerModules(deps)
 
 	return &Application{
-		Log:            log,
-		Config:         cfg,
-		DBClient:       dbClient,
-		Cache:          appCache,
-		Storage:        appStorage,
-		EmailClient:    emailClient,
-		Dependencies:   deps,
-		HTTPModules:    httpModules,
-		GRPCModules:    grpcModules,
-		GraphQLModules: graphqlModules,
+		Log:              log,
+		Config:           cfg,
+		DBClient:         dbClient,
+		Cache:            appCache,
+		Storage:          appStorage,
+		EmailClient:      emailClient,
+		Dependencies:     deps,
+		HTTPModules:      httpModules,
+		GRPCModules:      grpcModules,
+		GraphQLModules:   graphqlModules,
+		OtelProvider:     otelProvider,
+		Metrics:          metrics,
+		DBStatsCollector: dbStatsCollector,
 	}, nil
 }
 
@@ -150,6 +185,20 @@ func Run(log *logrus.Logger) error {
 	if app.GraphQLServer != nil {
 		app.GraphQLServer.Shutdown(ctx)
 	}
+	
+	// Stop database stats collector
+	if app.DBStatsCollector != nil {
+		app.DBStatsCollector.Stop()
+		app.Log.Info("Database stats collector stopped")
+	}
+	
+	// Shutdown observability
+	if app.OtelProvider != nil {
+		if err := app.OtelProvider.Shutdown(ctx); err != nil {
+			app.Log.Errorf("Error shutting down observability: %v", err)
+		}
+	}
+	
 	app.Log.Info("Servers stopped.")
 	return nil
 }
@@ -229,4 +278,12 @@ func (app *Application) startServers(ctx context.Context) {
 			}()
 		}
 	}
+}
+
+// getEnvOrDefault returns the value of an environment variable or a default value
+func getEnvOrDefault(key, defaultValue string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	return defaultValue
 }

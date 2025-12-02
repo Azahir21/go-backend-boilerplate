@@ -1,3 +1,9 @@
 tmp/
-docs/
 .env
+
+# Swagger docs (generated)
+docs/docs.go
+docs/swagger.*
+
+# Monitoring data (local development)
+monitoring/data/
