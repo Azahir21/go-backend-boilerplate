@@ -27,44 +27,13 @@ func NewUserHandler(log *logrus.Logger, userUsecase usecase.UserUsecase) *UserHa
 // RegisterRoutes implements the HttpRouter interface.
 func (h *UserHandler) RegisterRoutes(engine *gin.Engine) {
 	v1 := engine.Group("/api/v1")
-
 	grp := api.NewAPIRouterGroup(v1)
-	authGrp := api.NewAPIRouterGroup(v1.Group("/auth"))
-	adminGrp := api.NewAPIRouterGroup(v1.Group("/admin"))
-
-	// Public + mixed endpoints
 	grp.Register(
 		api.EndpointSpec{Method: http.MethodGet, Path: "/ping", Handler: h.Ping},
-	)
-
-	// Auth endpoints with typed handlers (auto-binding)
-	authGrp.Register(
-		api.EndpointSpec{
-			Method:  http.MethodPost,
-			Path:    "/register",
-			Handler: h.Register,
-		},
-		api.EndpointSpec{
-			Method:  http.MethodPost,
-			Path:    "/login",
-			Handler: h.Login,
-		},
-		api.EndpointSpec{
-			Method:      http.MethodGet,
-			Path:        "/profile",
-			Handler:     h.GetProfile,
-			Middlewares: []gin.HandlerFunc{middleware.AuthMiddleware()},
-		},
-	)
-
-	// Admin endpoints
-	adminGrp.Register(
-		api.EndpointSpec{
-			Method:      http.MethodGet,
-			Path:        "/test",
-			Handler:     h.AdminOnly,
-			Middlewares: []gin.HandlerFunc{middleware.AuthMiddleware(), middleware.AdminMiddleware()},
-		},
+		api.EndpointSpec{Method: http.MethodPost, Path: "/auth/register", Handler: h.Register},
+		api.EndpointSpec{Method: http.MethodPost, Path: "/auth/login", Handler: h.Login},
+		api.EndpointSpec{Method: http.MethodGet, Path: "/auth/profile", Handler: h.GetProfile, Middlewares: []gin.HandlerFunc{middleware.AuthMiddleware()}},
+		api.EndpointSpec{Method: http.MethodGet, Path: "/admin/test", Handler: h.AdminOnly, Middlewares: []gin.HandlerFunc{middleware.AuthMiddleware(), middleware.AdminMiddleware()}},
 	)
 }
 

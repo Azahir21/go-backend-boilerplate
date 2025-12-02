@@ -9,8 +9,8 @@ import (
 // NewLogger creates a new logger instance with JSON formatting
 func NewLogger() *logrus.Logger {
 	log := logrus.New()
-	log.SetFormatter(&logrus.JSONFormatter{
-		TimestampFormat: "2006-01-02 15:04:05",
+	log.SetFormatter(&logrus.TextFormatter{
+		FullTimestamp: true,
 	})
 	log.SetOutput(os.Stdout)
 	log.SetLevel(logrus.InfoLevel)

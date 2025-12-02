@@ -1,9 +1,6 @@
 package http
 
 import (
-	"net/http"
-
-	"github.com/azahir21/go-backend-boilerplate/pkg/httpresp"
 	"github.com/gin-gonic/gin"
 )
 
@@ -21,13 +18,4 @@ func NewServer(httpRouters ...HttpRouter) *gin.Engine {
 	}
 
 	return engine
-}
-
-// BindJSON is a helper function to bind JSON requests and handle errors.
-func BindJSON(c *gin.Context, obj interface{}) bool {
-	if err := c.ShouldBindJSON(obj); err != nil {
-		httpresp.JSON(c, http.StatusBadRequest, "Invalid request body", nil)
-		return false
-	}
-	return true
 }
