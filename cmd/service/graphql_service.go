@@ -8,8 +8,7 @@ import (
 	"time"
 
 	sharedGraphQL "github.com/azahir21/go-backend-boilerplate/internal/shared/graphql"
-	userGraphQL "github.com/azahir21/go-backend-boilerplate/internal/user/delivery/graphql"
-	userUsecase "github.com/azahir21/go-backend-boilerplate/internal/user/usecase"
+	"github.com/azahir21/go-backend-boilerplate/internal/shared/module"
 	"github.com/azahir21/go-backend-boilerplate/pkg/config"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -17,7 +16,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func NewGraphQLServer(log *logrus.Logger, cfg config.GraphQLServerConfig, userUsecase userUsecase.UserUsecase) (*http.Server, error) {
+func NewGraphQLServer(log *logrus.Logger, cfg config.GraphQLServerConfig, modules []module.GraphQLModule) (*http.Server, error) {
 	// Gin mode is set in cmd/app/app.go based on environment.
 
 	if cfg.StartupBanner {
@@ -36,9 +35,15 @@ func NewGraphQLServer(log *logrus.Logger, cfg config.GraphQLServerConfig, userUs
 		MaxAge:           12 * time.Hour,
 	}))
 
+	// Collect schema builders from all modules
+	var schemaBuilders []sharedGraphQL.SchemaBuilder
+	for _, m := range modules {
+		log.Infof("Registering GraphQL schema for module: %s", m.Name())
+		schemaBuilders = append(schemaBuilders, m.GraphQLSchemaBuilder())
+	}
+
 	// Create GraphQL schema
-	userSchemaBuilder := userGraphQL.NewUserSchemaBuilder(log, userUsecase)
-	schema, err := sharedGraphQL.NewRootSchema([]sharedGraphQL.SchemaBuilder{userSchemaBuilder})
+	schema, err := sharedGraphQL.NewRootSchema(schemaBuilders)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create GraphQL schema: %w", err)
 	}

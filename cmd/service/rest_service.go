@@ -6,8 +6,7 @@ import (
 
 	_ "github.com/azahir21/go-backend-boilerplate/docs" // Import generated docs
 	sharedHttp "github.com/azahir21/go-backend-boilerplate/internal/shared/http"
-	restDelivery "github.com/azahir21/go-backend-boilerplate/internal/user/delivery/http"
-	userUsecase "github.com/azahir21/go-backend-boilerplate/internal/user/usecase"
+	"github.com/azahir21/go-backend-boilerplate/internal/shared/module"
 	"github.com/azahir21/go-backend-boilerplate/pkg/config"
 
 	"github.com/gin-contrib/cors"
@@ -17,18 +16,22 @@ import (
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
-func NewRestServer(log *logrus.Logger, cfg config.HTTPServerConfig, userUsecase userUsecase.UserUsecase) (*http.Server, error) {
+func NewRestServer(log *logrus.Logger, cfg config.HTTPServerConfig, modules []module.HTTPModule) (*http.Server, error) {
 	// Gin mode is set in cmd/app/app.go based on environment.
 
 	if cfg.StartupBanner {
 		log.Infof("HTTP server starting on :%s", cfg.Port)
 	}
 
-	// Initialize handlers
-	userHandler := restDelivery.NewUserHandler(log, userUsecase)
+	// Collect HTTP handlers from all modules
+	var httpRouters []sharedHttp.HttpRouter
+	for _, m := range modules {
+		log.Infof("Registering HTTP routes for module: %s", m.Name())
+		httpRouters = append(httpRouters, m.HTTPHandler())
+	}
 
 	// Initialize Gin server and register routes
-	router := sharedHttp.NewServer(userHandler)
+	router := sharedHttp.NewServer(httpRouters...)
 
 	// Configure CORS
 	router.Use(cors.New(cors.Config{

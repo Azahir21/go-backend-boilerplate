@@ -17,9 +17,8 @@ import (
 	"github.com/azahir21/go-backend-boilerplate/infrastructure/external"
 	"github.com/azahir21/go-backend-boilerplate/infrastructure/storage"
 	"github.com/azahir21/go-backend-boilerplate/internal/shared/helper"
+	"github.com/azahir21/go-backend-boilerplate/internal/shared/module"
 	"github.com/azahir21/go-backend-boilerplate/internal/shared/unitofwork"
-	userRepoImpl "github.com/azahir21/go-backend-boilerplate/internal/user/repository/implementation"
-	userUsecase "github.com/azahir21/go-backend-boilerplate/internal/user/usecase"
 	"github.com/azahir21/go-backend-boilerplate/pkg/config"
 
 	"github.com/gin-gonic/gin"
@@ -29,16 +28,19 @@ import (
 
 // Application holds all application-wide dependencies.
 type Application struct {
-	Log           *logrus.Logger
-	Config        *config.Config
-	DBClient      *ent.Client
-	Cache         cache.Cache
-	Storage       storage.Storage
-	EmailClient   external.EmailClient
-	UserUsecase   userUsecase.UserUsecase
-	HTTPServer    *http.Server
-	GRPCServer    *grpc.Server
-	GraphQLServer *http.Server
+	Log            *logrus.Logger
+	Config         *config.Config
+	DBClient       *ent.Client
+	Cache          cache.Cache
+	Storage        storage.Storage
+	EmailClient    external.EmailClient
+	Dependencies   *module.Dependencies
+	HTTPModules    []module.HTTPModule
+	GRPCModules    []module.GRPCModule
+	GraphQLModules []module.GraphQLModule
+	HTTPServer     *http.Server
+	GRPCServer     *grpc.Server
+	GraphQLServer  *http.Server
 }
 
 // NewApplication initializes and returns a new Application instance.
@@ -66,44 +68,51 @@ func NewApplication(log *logrus.Logger) (*Application, error) {
 	// Initialize cache
 	appCache, err := cache.NewCache(log, cfg.Cache)
 	if err != nil {
-		dbClient.Close() // Close DB client on error
+		dbClient.Close()
 		return nil, fmt.Errorf("failed to initialize cache: %w", err)
 	}
 
 	// Initialize storage
-	// NewStorage requires a context, but NewApplication doesn't have one directly.
-	// For now, we'll use context.Background(). This might need refinement if storage operations
-	// are long-lived and need to be cancelled with the app's lifecycle.
 	appStorage, err := storage.NewStorage(context.Background(), log, cfg.Storage)
 	if err != nil {
-		dbClient.Close() // Close DB client on error
+		dbClient.Close()
 		return nil, fmt.Errorf("failed to initialize storage: %w", err)
 	}
 
 	// Initialize email client
 	emailClient, err := external.NewEmailClient(log, cfg.Email)
 	if err != nil {
-		dbClient.Close() // Close DB client on error
+		dbClient.Close()
 		return nil, fmt.Errorf("failed to initialize email client: %w", err)
 	}
 
-	// Initialize repositories
-	userRepo := userRepoImpl.NewUserRepository(dbClient)
-
-	// Initialize UnitOfWork
+	// Initialize unit of work
 	uow := unitofwork.NewUnitOfWork(dbClient)
 
-	// Initialize usecases
-	userUsecase := userUsecase.NewUserUsecase(userRepo, uow)
-
-	return &Application{
+	// Create shared dependencies for all modules
+	deps := &module.Dependencies{
 		Log:         log,
-		Config:      cfg,
 		DBClient:    dbClient,
 		Cache:       appCache,
 		Storage:     appStorage,
 		EmailClient: emailClient,
-		UserUsecase: userUsecase,
+		UoW:         uow,
+	}
+
+	// Register modules - add new modules here
+	httpModules, grpcModules, graphqlModules := registerModules(deps)
+
+	return &Application{
+		Log:            log,
+		Config:         cfg,
+		DBClient:       dbClient,
+		Cache:          appCache,
+		Storage:        appStorage,
+		EmailClient:    emailClient,
+		Dependencies:   deps,
+		HTTPModules:    httpModules,
+		GRPCModules:    grpcModules,
+		GraphQLModules: graphqlModules,
 	}, nil
 }
 
@@ -148,7 +157,7 @@ func Run(log *logrus.Logger) error {
 // setupServers creates HTTP, gRPC, and GraphQL servers based on configuration.
 func (app *Application) setupServers() error {
 	if app.Config.Server.HTTP.Enable {
-		srv, err := service.NewRestServer(app.Log, app.Config.Server.HTTP, app.UserUsecase)
+		srv, err := service.NewRestServer(app.Log, app.Config.Server.HTTP, app.HTTPModules)
 		if err != nil {
 			return fmt.Errorf("failed to create HTTP server: %w", err)
 		}
@@ -156,7 +165,7 @@ func (app *Application) setupServers() error {
 	}
 
 	if app.Config.Server.GRPC.Enable {
-		grpcServer, err := service.NewGrpcServer(app.Log, app.Config.Server.GRPC, app.UserUsecase)
+		grpcServer, err := service.NewGrpcServer(app.Log, app.Config.Server.GRPC, app.GRPCModules)
 		if err != nil {
 			return fmt.Errorf("failed to create gRPC server: %w", err)
 		}
@@ -164,7 +173,7 @@ func (app *Application) setupServers() error {
 	}
 
 	if app.Config.Server.GraphQL.Enable {
-		srv, err := service.NewGraphQLServer(app.Log, app.Config.Server.GraphQL, app.UserUsecase)
+		srv, err := service.NewGraphQLServer(app.Log, app.Config.Server.GraphQL, app.GraphQLModules)
 		if err != nil {
 			return fmt.Errorf("failed to create GraphQL server: %w", err)
 		}

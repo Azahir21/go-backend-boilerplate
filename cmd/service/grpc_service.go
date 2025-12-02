@@ -4,16 +4,14 @@ import (
 	"fmt"
 	"time"
 
-	grpcDelivery "github.com/azahir21/go-backend-boilerplate/internal/user/delivery/grpc"
-	userUsecase "github.com/azahir21/go-backend-boilerplate/internal/user/usecase"
+	"github.com/azahir21/go-backend-boilerplate/internal/shared/module"
 	"github.com/azahir21/go-backend-boilerplate/pkg/config"
-	"github.com/azahir21/go-backend-boilerplate/proto"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/keepalive"
 )
 
-func NewGrpcServer(log *logrus.Logger, cfg config.GRPCServerConfig, userUsecase userUsecase.UserUsecase) (*grpc.Server, error) {
+func NewGrpcServer(log *logrus.Logger, cfg config.GRPCServerConfig, modules []module.GRPCModule) (*grpc.Server, error) {
 	maxConnectionIdle, err := time.ParseDuration(cfg.MaxConnectionIdle)
 	if err != nil {
 		return nil, fmt.Errorf("invalid max connection idle duration: %w", err)
@@ -49,8 +47,11 @@ func NewGrpcServer(log *logrus.Logger, cfg config.GRPCServerConfig, userUsecase 
 		}),
 	)
 
-	userGrpcHandler := grpcDelivery.NewUserHandler(log, userUsecase)
-	proto.RegisterUserServiceServer(grpcServer, userGrpcHandler)
+	// Register gRPC services from all modules
+	for _, m := range modules {
+		log.Infof("Registering gRPC services for module: %s", m.Name())
+		m.RegisterGRPC(grpcServer)
+	}
 
 	if cfg.Enable {
 		log.Info("gRPC server configured successfully")
