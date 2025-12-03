@@ -18,11 +18,6 @@ import (
 
 func NewGraphQLServer(log *logrus.Logger, cfg config.GraphQLServerConfig, modules []module.GraphQLModule) (*http.Server, error) {
 	// Gin mode is set in cmd/app/app.go based on environment.
-
-	if cfg.StartupBanner {
-		log.Info("🚀 Starting GraphQL server...") // Use logrus for banner
-	}
-
 	router := gin.Default()
 
 	// Configure CORS
@@ -115,6 +110,10 @@ func NewGraphQLServer(log *logrus.Logger, cfg config.GraphQLServerConfig, module
 		ReadTimeout:  readTimeout,
 		WriteTimeout: writeTimeout,
 		IdleTimeout:  idleTimeout,
+	}
+
+	if cfg.StartupBanner {
+		log.Infof("🚀 Starting GraphQL server on :%s", cfg.Port)
 	}
 
 	return server, nil

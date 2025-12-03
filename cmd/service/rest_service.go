@@ -17,11 +17,6 @@ import (
 )
 
 func NewRestServer(log *logrus.Logger, cfg config.HTTPServerConfig, modules []module.HTTPModule) (*http.Server, error) {
-	// Gin mode is set in cmd/app/app.go based on environment.
-	if cfg.StartupBanner {
-		log.Infof("HTTP server starting on :%s", cfg.Port)
-	}
-
 	// Collect HTTP handlers from all modules
 	var httpRouters []sharedHttp.HttpRouter
 	for _, m := range modules {
@@ -68,5 +63,8 @@ func NewRestServer(log *logrus.Logger, cfg config.HTTPServerConfig, modules []mo
 		IdleTimeout:  idleTimeout,
 	}
 
+	if cfg.StartupBanner {
+		log.Infof("🚀 Starting HTTP server on :%s", cfg.Port)
+	}
 	return server, nil
 }

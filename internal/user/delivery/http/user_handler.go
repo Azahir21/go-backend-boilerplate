@@ -121,7 +121,7 @@ func (h *UserHandler) GetProfile(c *gin.Context) {
 }
 
 // AdminOnly godoc
-// @Summary Admin only endpoint ??
+// @Summary Admin only endpoint
 // @Description Example endpoint that requires admin access
 // @Tags Admin
 // @Accept json

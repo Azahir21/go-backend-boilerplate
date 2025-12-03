@@ -54,7 +54,7 @@ func NewGrpcServer(log *logrus.Logger, cfg config.GRPCServerConfig, modules []mo
 	}
 
 	if cfg.Enable {
-		log.Info("gRPC server configured successfully")
+		log.Infof("🚀 Starting gRPC server on :%s", cfg.Port)
 	}
 
 	return grpcServer, nil

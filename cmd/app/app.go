@@ -194,7 +194,6 @@ func (app *Application) startServers(ctx context.Context) {
 			app.Log.Errorf("failed to listen on HTTP port %s: %v", app.Config.Server.HTTP.Port, err)
 		} else {
 			go func() {
-				app.Log.Infof("HTTP server starting on :%s", app.Config.Server.HTTP.Port)
 				if err := app.HTTPServer.Serve(httpLis); err != nil && err != http.ErrServerClosed {
 					app.Log.Errorf("failed to start HTTP server: %v", err)
 				}
@@ -208,7 +207,6 @@ func (app *Application) startServers(ctx context.Context) {
 			app.Log.Errorf("failed to listen on gRPC port %s: %v", app.Config.Server.GRPC.Port, err)
 		} else {
 			go func() {
-				app.Log.Infof("gRPC server starting on :%s", app.Config.Server.GRPC.Port)
 				if err := app.GRPCServer.Serve(grpcLis); err != nil && err != grpc.ErrServerStopped {
 					app.Log.Errorf("failed to start gRPC server: %v", err)
 				}
@@ -222,7 +220,6 @@ func (app *Application) startServers(ctx context.Context) {
 			app.Log.Errorf("failed to listen on GraphQL port %s: %v", app.Config.Server.GraphQL.Port, err)
 		} else {
 			go func() {
-				app.Log.Infof("GraphQL server starting on :%s", app.Config.Server.GraphQL.Port)
 				if err := app.GraphQLServer.Serve(graphqlLis); err != nil && err != http.ErrServerClosed {
 					app.Log.Errorf("failed to start GraphQL server: %v", err)
 				}
