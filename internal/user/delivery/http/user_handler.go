@@ -7,6 +7,7 @@ import (
 	"github.com/azahir21/go-backend-boilerplate/internal/shared/middleware"
 	"github.com/azahir21/go-backend-boilerplate/internal/user/delivery/http/dto"
 	"github.com/azahir21/go-backend-boilerplate/internal/user/usecase"
+	"github.com/azahir21/go-backend-boilerplate/pkg/apperr"
 	"github.com/azahir21/go-backend-boilerplate/pkg/httpresp"
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
@@ -63,7 +64,7 @@ func (h *UserHandler) Ping(c *gin.Context) {
 func (h *UserHandler) Register(c *gin.Context, req *dto.RegisterRequest) error {
 	result, err := h.UserUsecase.Register(c.Request.Context(), req)
 	if err != nil {
-		httpresp.JSON(c, http.StatusBadRequest, err.Error(), nil)
+		apperr.RespondBadRequest(c, "Failed to register user")
 		return nil
 	}
 
@@ -85,7 +86,7 @@ func (h *UserHandler) Register(c *gin.Context, req *dto.RegisterRequest) error {
 func (h *UserHandler) Login(c *gin.Context, req *dto.LoginRequest) error {
 	result, err := h.UserUsecase.Login(c.Request.Context(), req)
 	if err != nil {
-		httpresp.JSON(c, http.StatusUnauthorized, err.Error(), nil)
+		apperr.RespondUnauthorized(c, "Invalid username or password")
 		return nil
 	}
 
@@ -107,13 +108,13 @@ func (h *UserHandler) Login(c *gin.Context, req *dto.LoginRequest) error {
 func (h *UserHandler) GetProfile(c *gin.Context) {
 	userID, exists := c.Get("user_id")
 	if !exists {
-		httpresp.JSON(c, http.StatusUnauthorized, "User not authenticated", nil)
+		apperr.RespondUnauthorized(c, "User not authenticated")
 		return
 	}
 
 	user, err := h.UserUsecase.GetProfile(c.Request.Context(), userID.(uint))
 	if err != nil {
-		httpresp.JSON(c, http.StatusNotFound, "User not found", nil)
+		apperr.RespondNotFound(c, "User not found")
 		return
 	}
 

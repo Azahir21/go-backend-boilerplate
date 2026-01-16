@@ -19,6 +19,7 @@ import (
 	"github.com/azahir21/go-backend-boilerplate/internal/shared/helper"
 	"github.com/azahir21/go-backend-boilerplate/internal/shared/module"
 	"github.com/azahir21/go-backend-boilerplate/internal/shared/unitofwork"
+	"github.com/azahir21/go-backend-boilerplate/pkg/apperr"
 	"github.com/azahir21/go-backend-boilerplate/pkg/config"
 
 	"github.com/gin-gonic/gin"
@@ -58,6 +59,9 @@ func NewApplication(log *logrus.Logger) (*Application, error) {
 
 	// Initialize JWT helper
 	helper.InitJWT(cfg.JWT.Secret, cfg.JWT.ExpiryHours)
+
+	// Initialize error responder configuration
+	apperr.SetDefaultConfig(apperr.ConfigFromEnv(cfg.Server.Env))
 
 	// Initialize database
 	dbClient, err := db.NewEntClient(log, cfg)
