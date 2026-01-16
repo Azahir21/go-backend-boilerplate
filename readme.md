@@ -31,6 +31,74 @@ A robust and scalable Go backend boilerplate designed to jumpstart your next pro
 -   **Docker Support**: Ready-to-use Dockerfile for containerization.
 -   **Project Structure**: Clear and maintainable directory layout.
 
+
+## Delivery Layer Selection
+
+This boilerplate supports **three delivery mechanisms**: REST, gRPC, and GraphQL. 
+
+### Compile-Time Selection (3 Separate Binaries)
+
+Choose your delivery layer at **build time** by selecting the appropriate binary:
+
+| Binary | Delivery Layer | Build Command | Use Case |
+|--------|----------------|---------------|----------|
+| `rest` | REST/HTTP API | `make build-rest` | RESTful services, web APIs |
+| `graphql` | GraphQL API | `make build-graphql` | Flexible queries, frontend-driven APIs |
+| `grpc` | gRPC API | `make build-grpc` | High-performance, microservices |
+
+**Benefits:**
+- ✅ **True compile-time exclusion** - only your chosen delivery layer is compiled
+- ✅ **Smaller binaries** - no unused code in your binary
+- ✅ **Clear dependencies** - REST doesn't need proto, gRPC doesn't need Swagger
+- ✅ **Clean IDE experience** - no build tag issues with gopls/VS Code
+
+### Quick Start
+
+**Build and run REST API:**
+```bash
+make build-rest
+./bin/go-backend-boilerplate-rest
+```
+
+**Build and run GraphQL API:**
+```bash
+make build-graphql
+./bin/go-backend-boilerplate-graphql
+```
+
+**Build and run gRPC API:**
+```bash
+# Requires protoc to be installed
+make build-grpc
+./bin/go-backend-boilerplate-grpc
+```
+
+**Build all three:**
+```bash
+make build  # Creates all three binaries
+```
+
+### Runtime Configuration
+
+Within each binary, you can still use `config.yaml` to control server behavior:
+
+```yaml
+server:
+  http_server:
+    enable: true    # For REST binary
+    port: "8080"
+  grpc_server:
+    enable: true    # For gRPC binary
+    port: "50051"
+  graphql_server:
+    enable: true    # For GraphQL binary
+    port: "8081"
+```
+
+**Note:** Each binary only respects its relevant server configuration. The REST binary ignores `grpc_server` and `graphql_server` settings.
+
+
+
 ## Getting Started
 
 Follow these instructions to set up and run the project locally.
