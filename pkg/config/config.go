@@ -15,6 +15,7 @@ import (
 
 type Config struct {
 	DB      Database      `mapstructure:"database"`
+	Mongo   MongoConfig   `mapstructure:"mongo"`
 	Server  Server        `mapstructure:"server"`
 	JWT     JWT           `mapstructure:"jwt"`
 	Admin   Admin         `mapstructure:"default_admin"`
@@ -24,6 +25,7 @@ type Config struct {
 }
 
 type Cache struct {
+	Enable    bool            `mapstructure:"enable"`
 	Type      string          `mapstructure:"type"`
 	Redis     RedisConfig     `mapstructure:"redis"`
 	Ristretto RistrettoConfig `mapstructure:"ristretto"`
@@ -43,6 +45,7 @@ type RistrettoConfig struct {
 }
 
 type Database struct {
+	Enable      bool   `mapstructure:"enable"`
 	Driver      string `mapstructure:"driver"`
 	DSN         string `mapstructure:"dsn"`
 	Host        string `mapstructure:"host"`
@@ -124,10 +127,11 @@ type GCSStorageConfig struct {
 }
 
 type StorageConfig struct {
-	Type  string             `mapstructure:"type"`
-	Local LocalStorageConfig `mapstructure:"local"`
-	S3    S3StorageConfig    `mapstructure:"s3"`
-	GCS   GCSStorageConfig   `mapstructure:"gcs"`
+	Enable bool               `mapstructure:"enable"`
+	Type   string             `mapstructure:"type"`
+	Local  LocalStorageConfig `mapstructure:"local"`
+	S3     S3StorageConfig    `mapstructure:"s3"`
+	GCS    GCSStorageConfig   `mapstructure:"gcs"`
 }
 
 // SmtpConfig holds configuration for SMTP email client.
@@ -146,9 +150,23 @@ type SendGridConfig struct {
 }
 
 type EmailConfig struct {
+	Enable   bool           `mapstructure:"enable"`
 	Type     string         `mapstructure:"type"`
 	SMTP     SmtpConfig     `mapstructure:"smtp"`
 	SendGrid SendGridConfig `mapstructure:"sendgrid"`
+}
+
+// MongoConfig holds configuration for MongoDB connection.
+type MongoConfig struct {
+	Enable              bool              `mapstructure:"enable"`
+	URI                 string            `mapstructure:"uri"`
+	Database            string            `mapstructure:"database"`
+	Username            string            `mapstructure:"username"`
+	Password            string            `mapstructure:"password"`
+	AuthSource          string            `mapstructure:"auth_source"`
+	ConnectTimeoutMS    int               `mapstructure:"connect_timeout_ms"`
+	MaxPoolSize         uint64            `mapstructure:"max_pool_size"`
+	MinPoolSize         uint64            `mapstructure:"min_pool_size"`
 }
 
 // LoadConfig loads configuration from file or environment variables.
