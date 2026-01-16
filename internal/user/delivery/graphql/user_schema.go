@@ -1,3 +1,6 @@
+//go:build graphql
+// +build graphql
+
 package graphql
 
 import (

@@ -1,3 +1,6 @@
+//go:build rest
+// +build rest
+
 package config
 
 import (
