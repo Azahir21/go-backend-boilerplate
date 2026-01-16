@@ -1,6 +1,3 @@
-//go:build rest
-// +build rest
-
 package app
 
 import (
@@ -8,15 +5,23 @@ import (
 	userConfig "github.com/azahir21/go-backend-boilerplate/internal/user/config"
 )
 
-// registerRESTModules registers REST/HTTP modules when the rest build tag is enabled.
-func registerRESTModules(deps *module.Dependencies) []module.HTTPModule {
+// registerModules registers all application modules and returns their handlers.
+// Add new modules here when extending the application.
+func registerModules(deps *module.Dependencies) ([]module.HTTPModule, []module.GRPCModule, []module.GraphQLModule) {
 	var httpModules []module.HTTPModule
+	var grpcModules []module.GRPCModule
+	var graphqlModules []module.GraphQLModule
 
-	// User module - HTTP
+	// User module
 	httpModules = append(httpModules, userConfig.NewHTTPConfig(deps))
+	grpcModules = append(grpcModules, userConfig.NewGRPCConfig(deps))
+	graphqlModules = append(graphqlModules, userConfig.NewGraphQLConfig(deps))
 
-	// Add more HTTP modules here as needed:
+	// Add more modules here as needed:
+	// productModule := productConfig.NewProductConfig(deps)
 	// httpModules = append(httpModules, productConfig.NewHTTPConfig(deps))
+	// grpcModules = append(grpcModules, productConfig.NewGRPCConfig(deps))
+	// graphqlModules = append(graphqlModules, productConfig.NewGraphQLConfig(deps))
 
-	return httpModules
+	return httpModules, grpcModules, graphqlModules
 }

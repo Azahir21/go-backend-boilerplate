@@ -12,67 +12,13 @@ dev: ## Start development server with hot reload (requires Air)
 	@echo "Starting development server with hot reload..."
 	air
 
-# Run commands
-run: ## Start application with all delivery layers
-	@echo "Starting application with all delivery layers..."
-	go run -tags "rest,grpc,graphql" cmd/main.go
+run: ## Start production server
+	@echo "Starting production server..."
+	go run main.go
 
-run-rest: ## Start REST-only server
-	@echo "Starting REST-only server..."
-	go run -tags rest cmd/main.go
-
-run-grpc: ## Start gRPC-only server
-	@echo "Starting gRPC-only server..."
-	go run -tags grpc cmd/main.go
-
-run-graphql: ## Start GraphQL-only server
-	@echo "Starting GraphQL-only server..."
-	go run -tags graphql cmd/main.go
-
-run-rest-grpc: ## Start server with REST + gRPC support
-	@echo "Starting server with REST and gRPC support..."
-	go run -tags "rest,grpc" cmd/main.go
-
-run-rest-graphql: ## Start server with REST + GraphQL support
-	@echo "Starting server with REST and GraphQL support..."
-	go run -tags "rest,graphql" cmd/main.go
-
-run-grpc-graphql: ## Start server with gRPC + GraphQL support
-	@echo "Starting server with gRPC and GraphQL support..."
-	go run -tags "grpc,graphql" cmd/main.go
-
-# Build commands
-build: ## Build the application binary with all delivery layers
-	@echo "Building application with all delivery layers..."
-	go build -tags "rest,grpc,graphql" -o bin/go-backend-boilerplate ./cmd
-
-build-rest: ## Build REST-only binary (no gRPC/GraphQL dependencies)
-	@echo "Building REST-only application..."
-	go build -tags rest -o bin/go-backend-boilerplate-rest ./cmd
-
-build-grpc: ## Build gRPC-only binary (no REST/GraphQL dependencies)
-	@echo "Building gRPC-only application..."
-	go build -tags grpc -o bin/go-backend-boilerplate-grpc ./cmd
-
-build-graphql: ## Build GraphQL-only binary (no REST/gRPC dependencies)
-	@echo "Building GraphQL-only application..."
-	go build -tags graphql -o bin/go-backend-boilerplate-graphql ./cmd
-
-build-rest-grpc: ## Build with REST + gRPC support
-	@echo "Building application with REST and gRPC support..."
-	go build -tags "rest,grpc" -o bin/go-backend-boilerplate-rest-grpc ./cmd
-
-build-rest-graphql: ## Build with REST + GraphQL support
-	@echo "Building application with REST and GraphQL support..."
-	go build -tags "rest,graphql" -o bin/go-backend-boilerplate-rest-graphql ./cmd
-
-build-grpc-graphql: ## Build with gRPC + GraphQL support
-	@echo "Building application with gRPC and GraphQL support..."
-	go build -tags "grpc,graphql" -o bin/go-backend-boilerplate-grpc-graphql ./cmd
-
-build-all: ## Build with all delivery layers (REST + gRPC + GraphQL)
-	@echo "Building application with all delivery layers..."
-	go build -tags "rest,grpc,graphql" -o bin/go-backend-boilerplate-all ./cmd
+build: ## Build the application binary
+	@echo "Building application..."
+	go build -o bin/go-backend-boilerplate main.go
 
 # Testing commands
 test: ## Run all tests
@@ -115,18 +61,9 @@ swag: ## Generate Swagger documentation
 	swag init -dir ./cmd,internal/user/delivery/http -g main.go --parseDependency --parseInternal
 
 # Code generation
-generate: ## Generate code for ent and protobuf (requires protoc for gRPC)
+generate: ## Generate code for ent and protobuf
 	@echo "Generating ent code..."
 	go generate ./ent
-	@echo "Generating protobuf code (only needed if building with gRPC)..."
-	@if command -v protoc >/dev/null 2>&1; then \
-		protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative proto/user.proto; \
-	else \
-		echo "Warning: protoc not found. Skipping protobuf generation."; \
-		echo "Install protoc if you need gRPC support."; \
-	fi
-
-generate-proto: ## Generate only protobuf code (required for gRPC builds)
 	@echo "Generating protobuf code..."
 	protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative proto/user.proto
 
@@ -200,21 +137,13 @@ setup: ## Setup development environment
 	go install github.com/swaggo/swag/cmd/swag@latest
 	go install github.com/pressly/goose/v3/cmd/goose@latest
 	go install golang.org/x/tools/cmd/goimports@latest
-	@echo "Generating Swagger documentation..."
-	$(MAKE) swag
-	@echo "Generating ent code..."
-	go generate ./ent
-	@echo ""
-	@echo "Note: If you plan to use gRPC, install protoc and run 'make setup-grpc'"
-	@echo "Development environment setup complete!"
-
-setup-grpc: ## Install gRPC/protobuf tools (only needed for gRPC builds)
-	@echo "Installing gRPC/protobuf tools..."
 	go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
 	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
-	@echo "Generating protobuf code..."
-	$(MAKE) generate-proto
-	@echo "gRPC setup complete!"
+	@echo "Generating Swagger documentation..."
+	$(MAKE) swag
+	@echo "Generating ent and protobuf code..."
+	make generate
+	@echo "Development environment setup complete!"
 
 # Cleanup
 clean: ## Clean build artifacts

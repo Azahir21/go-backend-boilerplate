@@ -1,15 +1,12 @@
-//go:build grpc
-// +build grpc
-
 package config
 
 import (
 	"github.com/azahir21/go-backend-boilerplate/internal/shared/module"
 	"github.com/azahir21/go-backend-boilerplate/internal/shared/unitofwork"
 	grpcDelivery "github.com/azahir21/go-backend-boilerplate/internal/user/delivery/grpc"
+	proto "github.com/azahir21/go-backend-boilerplate/internal/user/delivery/grpc/gen"
 	userRepoImpl "github.com/azahir21/go-backend-boilerplate/internal/user/repository/implementation"
 	userUsecase "github.com/azahir21/go-backend-boilerplate/internal/user/usecase"
-	"github.com/azahir21/go-backend-boilerplate/proto"
 	"google.golang.org/grpc"
 )
 
