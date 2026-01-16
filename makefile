@@ -18,7 +18,7 @@ run: ## Start production server
 
 build: ## Build the application binary
 	@echo "Building application..."
-	go build -o bin/go-backend-boilerplate main.go
+	go build -o bin/go-backend-boilerplate ./cmd
 
 # Testing commands
 test: ## Run all tests

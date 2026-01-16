@@ -32,118 +32,58 @@ A robust and scalable Go backend boilerplate designed to jumpstart your next pro
 -   **Project Structure**: Clear and maintainable directory layout.
 
 
-## Build Tags: Modular Delivery Layers
+## Delivery Layer Selection
 
-This boilerplate supports **compile-time selection** of delivery layers using Go build tags. This allows you to:
-- Build only what you need (reducing binary size and dependencies)
-- Skip unnecessary tooling (e.g., no protoc needed for REST-only builds)
-- Choose any combination of REST, gRPC, and GraphQL
+This boilerplate supports **three delivery mechanisms**: REST, gRPC, and GraphQL. You can enable or disable any combination of these via the `config.yaml` file:
 
-### Available Build Combinations
-
-| Build Tags | Delivery Layers | Build Command | Binary Size* |
-|------------|----------------|---------------|--------------|
-| `rest` | REST only | `go build -tags rest` | ~94MB |
-| `grpc` | gRPC only | `go build -tags grpc` | ~82MB |
-| `graphql` | GraphQL only | `go build -tags graphql` | ~85MB |
-| `rest,grpc` | REST + gRPC | `go build -tags "rest,grpc"` | ~95MB |
-| `rest,graphql` | REST + GraphQL | `go build -tags "rest,graphql"` | ~95MB |
-| `grpc,graphql` | gRPC + GraphQL | `go build -tags "grpc,graphql"` | ~85MB |
-| `rest,grpc,graphql` | All layers | `go build -tags "rest,grpc,graphql"` | ~95MB |
-
-*Approximate binary sizes (unstripped, debug symbols included)
-
-### Quick Start with Build Tags
-
-#### 1. REST-only (Recommended for beginners)
-```bash
-# No protoc or GraphQL dependencies needed
-make build-rest
-./bin/go-backend-boilerplate-rest
-```
-
-#### 2. gRPC-only
-```bash
-# Requires protoc and generated proto files
-make setup-grpc  # Install protoc tools and generate proto files
-make build-grpc
-./bin/go-backend-boilerplate-grpc
-```
-
-#### 3. All delivery layers
-```bash
-# Requires all dependencies
-make setup       # Install all tools
-make setup-grpc  # Install gRPC tools
-make build-all
-./bin/go-backend-boilerplate-all
-```
-
-### Makefile Targets
-
-```bash
-# Build targets
-make build-rest          # REST-only
-make build-grpc          # gRPC-only
-make build-graphql       # GraphQL-only
-make build-rest-grpc     # REST + gRPC
-make build-rest-graphql  # REST + GraphQL
-make build-grpc-graphql  # gRPC + GraphQL
-make build-all           # All delivery layers
-
-# Setup targets
-make setup               # Basic setup (REST dependencies)
-make setup-grpc          # Install gRPC/protoc tools
-make generate-proto      # Generate protobuf files (needed for gRPC)
-```
-
-### Configuration vs Build Tags
-
-**Build tags** control **what code is compiled**.  
-**Config files** control **what servers start at runtime**.
-
-Example: Build with REST + gRPC support, but only run REST:
 ```yaml
-# config.yaml
 server:
   http_server:
-    enable: true
+    enable: true    # REST API
   grpc_server:
-    enable: false  # Won't start, but code is compiled
+    enable: false   # gRPC API
+  graphql_server:
+    enable: false   # GraphQL API
 ```
 
-Build command:
-```bash
-go build -tags "rest,grpc" -o app ./cmd
+**Key Points:**
+- All delivery layers are compiled into the binary
+- Only enabled servers start at runtime based on config
+- Use `enable: true/false` in config.yaml to control which servers run
+- At least one server must be enabled
+
+**Example Configurations:**
+
+**REST Only** (Recommended for beginners):
+```yaml
+http_server:
+  enable: true
+grpc_server:
+  enable: false
+graphql_server:
+  enable: false
 ```
 
-### Required Dependencies by Build Tag
-
-| Build Tag | Required Dependencies | Setup Command |
-|-----------|----------------------|---------------|
-| `rest` | Go, Gin, Swagger | `make setup` |
-| `grpc` | Go, gRPC, protoc, protoc-gen-go* | `make setup-grpc` |
-| `graphql` | Go, graphql-go | `make setup` |
-
-*protoc must be installed separately: https://grpc.io/docs/protoc-installation/
-
-### Migration from Previous Versions
-
-If you're upgrading from a version without build tags:
-
-**Old way (all layers always compiled):**
-```bash
-go build -o app ./cmd
+**REST + gRPC:**
+```yaml
+http_server:
+  enable: true
+grpc_server:
+  enable: true
+graphql_server:
+  enable: false
 ```
 
-**New way (explicit layer selection):**
-```bash
-# Choose one:
-go build -tags rest -o app ./cmd              # REST only
-go build -tags "rest,grpc,graphql" -o app ./cmd  # All layers (equivalent to old behavior)
+**All Three:**
+```yaml
+http_server:
+  enable: true
+grpc_server:
+  enable: true
+graphql_server:
+  enable: true
 ```
 
-For full backward compatibility (all layers), use: `make build` or `make build-all`
 
 ## Getting Started
 
