@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/azahir21/go-backend-boilerplate/pkg/httpresp"
+	"github.com/azahir21/go-backend-boilerplate/pkg/apperr"
 	"github.com/gin-gonic/gin"
 )
 
@@ -46,7 +46,7 @@ func (g *APIRouterGroup) wrap(s EndpointSpec) gin.HandlerFunc {
 		hv := reflect.ValueOf(s.Handler)
 		ht := hv.Type()
 		if ht.Kind() != reflect.Func || ht.NumIn() < 1 || ht.In(0) != ginContextType {
-			httpresp.JSON(c, http.StatusInternalServerError, "invalid handler signature", nil)
+			apperr.RespondInternalServer(c, "invalid handler signature")
 			return
 		}
 
@@ -70,20 +70,32 @@ func (g *APIRouterGroup) wrap(s EndpointSpec) gin.HandlerFunc {
 					}
 				}
 			} else {
-				bindList = []string{"param", "query", "json"}
+				method := strings.ToUpper(s.Method)
+				if method == http.MethodGet || method == http.MethodDelete {
+					bindList = []string{"param", "query", "json"}
+				} else {
+					bindList = []string{"json", "query", "param"}
+				}
 			}
 
 			// perform bindings in order; json binder only runs if there is a body
 			for _, b := range bindList {
 				switch b {
 				case "param", "uri":
+					if len(c.Params) == 0 {
+						continue
+					}
 					if err := c.ShouldBindUri(reqPtr.Interface()); err != nil {
-						httpresp.JSON(c, http.StatusBadRequest, err.Error(), nil)
+						apperr.Respond(c, apperr.BadRequest("Invalid URI parameters").WithCause(err))
 						return
 					}
 				case "query":
+					// Skip query binding when there are no query values.
+					if len(c.Request.URL.Query()) == 0 {
+						continue
+					}
 					if err := c.ShouldBindQuery(reqPtr.Interface()); err != nil {
-						httpresp.JSON(c, http.StatusBadRequest, err.Error(), nil)
+						apperr.Respond(c, apperr.BadRequest("Invalid query parameters").WithCause(err))
 						return
 					}
 				case "json", "body":
@@ -92,7 +104,7 @@ func (g *APIRouterGroup) wrap(s EndpointSpec) gin.HandlerFunc {
 						continue
 					}
 					if err := c.ShouldBindJSON(reqPtr.Interface()); err != nil {
-						httpresp.JSON(c, http.StatusBadRequest, err.Error(), nil)
+						apperr.Respond(c, apperr.BadRequest("Invalid JSON body").WithCause(err))
 						return
 					}
 				default:
@@ -116,7 +128,7 @@ func (g *APIRouterGroup) wrap(s EndpointSpec) gin.HandlerFunc {
 		if ht.NumOut() == 1 && !outs[0].IsNil() {
 			if err, ok := outs[0].Interface().(error); ok && err != nil {
 				// If your handler already wrote a response, this will be ignored by Gin.
-				httpresp.JSON(c, http.StatusInternalServerError, err.Error(), nil)
+				apperr.RespondInternalServer(c, err.Error())
 				return
 			}
 		}

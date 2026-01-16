@@ -1,11 +1,10 @@
 package middleware
 
 import (
-	"net/http"
 	"strings"
 
 	"github.com/azahir21/go-backend-boilerplate/internal/shared/helper"
-	"github.com/azahir21/go-backend-boilerplate/pkg/httpresp"
+	"github.com/azahir21/go-backend-boilerplate/pkg/apperr"
 	"github.com/gin-gonic/gin"
 )
 
@@ -24,28 +23,28 @@ func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader(authorizationHeader)
 		if authHeader == "" {
-			httpresp.JSON(c, http.StatusUnauthorized, "Authorization header is required", nil)
+			apperr.RespondUnauthorized(c, "Authorization header missing")
 			c.Abort()
 			return
 		}
 
 		// Extract token from "Bearer <token>" format
 		if !strings.HasPrefix(authHeader, bearerPrefix) {
-			httpresp.JSON(c, http.StatusUnauthorized, "Invalid authorization header format", nil)
+			apperr.RespondUnauthorized(c, "Invalid authorization header format")
 			c.Abort()
 			return
 		}
 
 		tokenString := strings.TrimPrefix(authHeader, bearerPrefix)
 		if tokenString == "" {
-			httpresp.JSON(c, http.StatusUnauthorized, "Token is empty", nil)
+			apperr.RespondUnauthorized(c, "Token missing in authorization header")
 			c.Abort()
 			return
 		}
 
 		claims, err := helper.ValidateToken(tokenString)
 		if err != nil {
-			httpresp.JSON(c, http.StatusUnauthorized, "Invalid or expired token", nil)
+			apperr.RespondUnauthorized(c, "Invalid or expired token")
 			c.Abort()
 			return
 		}
@@ -64,14 +63,14 @@ func AdminMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		role, exists := c.Get(roleKey)
 		if !exists {
-			httpresp.JSON(c, http.StatusUnauthorized, "User not authenticated", nil)
+			apperr.RespondUnauthorized(c, "User not authenticated")
 			c.Abort()
 			return
 		}
 
 		roleStr, ok := role.(string)
 		if !ok || roleStr != "admin" {
-			httpresp.JSON(c, http.StatusForbidden, "Admin access required", nil)
+			apperr.RespondForbidden(c, "Admin access required")
 			c.Abort()
 			return
 		}
