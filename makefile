@@ -16,25 +16,37 @@ run: ## Start production server
 	@echo "Starting production server..."
 	go run main.go
 
-build: ## Build the application binary
-	@echo "Building application..."
-	go build -o bin/go-backend-boilerplate main.go
+build: ## Build the application binary with all delivery layers
+	@echo "Building application with all delivery layers..."
+	go build -tags "rest,grpc,graphql" -o bin/go-backend-boilerplate ./cmd
 
 build-rest: ## Build REST-only binary (no gRPC/GraphQL dependencies)
 	@echo "Building REST-only application..."
-	go build -o bin/go-backend-boilerplate-rest main.go
+	go build -tags rest -o bin/go-backend-boilerplate-rest ./cmd
 
-build-grpc: ## Build with gRPC support
-	@echo "Building application with gRPC support..."
-	go build -tags grpc -o bin/go-backend-boilerplate-grpc main.go
+build-grpc: ## Build gRPC-only binary (no REST/GraphQL dependencies)
+	@echo "Building gRPC-only application..."
+	go build -tags grpc -o bin/go-backend-boilerplate-grpc ./cmd
 
-build-graphql: ## Build with GraphQL support
-	@echo "Building application with GraphQL support..."
-	go build -tags graphql -o bin/go-backend-boilerplate-graphql main.go
+build-graphql: ## Build GraphQL-only binary (no REST/gRPC dependencies)
+	@echo "Building GraphQL-only application..."
+	go build -tags graphql -o bin/go-backend-boilerplate-graphql ./cmd
+
+build-rest-grpc: ## Build with REST + gRPC support
+	@echo "Building application with REST and gRPC support..."
+	go build -tags "rest,grpc" -o bin/go-backend-boilerplate-rest-grpc ./cmd
+
+build-rest-graphql: ## Build with REST + GraphQL support
+	@echo "Building application with REST and GraphQL support..."
+	go build -tags "rest,graphql" -o bin/go-backend-boilerplate-rest-graphql ./cmd
+
+build-grpc-graphql: ## Build with gRPC + GraphQL support
+	@echo "Building application with gRPC and GraphQL support..."
+	go build -tags "grpc,graphql" -o bin/go-backend-boilerplate-grpc-graphql ./cmd
 
 build-all: ## Build with all delivery layers (REST + gRPC + GraphQL)
 	@echo "Building application with all delivery layers..."
-	go build -tags "grpc,graphql" -o bin/go-backend-boilerplate-all main.go
+	go build -tags "rest,grpc,graphql" -o bin/go-backend-boilerplate-all ./cmd
 
 # Testing commands
 test: ## Run all tests

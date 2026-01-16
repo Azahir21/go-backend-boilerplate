@@ -5,12 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"net"
-	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 
-	"github.com/azahir21/go-backend-boilerplate/cmd/service"
 	"github.com/azahir21/go-backend-boilerplate/ent"
 	"github.com/azahir21/go-backend-boilerplate/infrastructure/cache"
 	"github.com/azahir21/go-backend-boilerplate/infrastructure/db"
@@ -34,8 +32,6 @@ type Application struct {
 	Storage      storage.Storage
 	EmailClient  external.EmailClient
 	Dependencies *module.Dependencies
-	HTTPModules  []module.HTTPModule
-	HTTPServer   *http.Server
 }
 
 // NewApplication initializes and returns a new Application instance.
@@ -94,9 +90,6 @@ func NewApplication(log *logrus.Logger) (*Application, error) {
 		UoW:         uow,
 	}
 
-	// Register modules - add new modules here
-	httpModules := registerModules(deps)
-
 	app := &Application{
 		Log:          log,
 		Config:       cfg,
@@ -105,13 +98,21 @@ func NewApplication(log *logrus.Logger) (*Application, error) {
 		Storage:      appStorage,
 		EmailClient:  emailClient,
 		Dependencies: deps,
-		HTTPModules:  httpModules,
 	}
 
-	// Register grpc and graphql modules if build tags are enabled
-	app.registerConditionalModules(deps)
+	// Register modules based on build tags
+	app.registerModules(deps)
 
 	return app, nil
+}
+
+// registerModules calls the init functions for all enabled delivery layers.
+func (app *Application) registerModules(deps *module.Dependencies) {
+	// These functions are defined in build-tag-specific files
+	// and will only be linked if the corresponding tag is present
+	initRESTModules(deps)
+	initGRPCModules(deps)
+	initGraphQLModules(deps)
 }
 
 func Run(log *logrus.Logger) error {
@@ -144,63 +145,46 @@ func Run(log *logrus.Logger) error {
 	return nil
 }
 
-// setupServers creates HTTP, gRPC, and GraphQL servers based on configuration.
+// setupServers creates servers based on configuration and build tags.
 func (app *Application) setupServers() error {
 	serversEnabled := false
 
-	if app.Config.Server.HTTP.Enable {
-		srv, err := service.NewRestServer(app.Log, app.Config.Server.HTTP, app.HTTPModules)
-		if err != nil {
-			return fmt.Errorf("failed to create HTTP server: %w", err)
-		}
-		app.HTTPServer = srv
+	// Setup REST server if build tag is enabled
+	if app.setupRESTServer() {
 		serversEnabled = true
 	}
 
-	// Setup gRPC and GraphQL servers if build tags are enabled
-	if err := app.setupConditionalServers(); err != nil {
-		return err
-	}
-	
-	if app.hasGRPCServer() {
+	// Setup gRPC server if build tag is enabled
+	if app.setupGRPCServer() {
 		serversEnabled = true
 	}
-	
-	if app.hasGraphQLServer() {
+
+	// Setup GraphQL server if build tag is enabled
+	if app.setupGraphQLServer() {
 		serversEnabled = true
 	}
 
 	if !serversEnabled {
-		return errors.New("no server enabled. Please enable at least one of HTTP, gRPC or GraphQL")
+		return errors.New("no server enabled. Please enable at least one of HTTP, gRPC or GraphQL in config, and build with appropriate tags")
 	}
 	return nil
 }
 
 // startServers starts the enabled servers in goroutines.
 func (app *Application) startServers(ctx context.Context) {
-	if app.Config.Server.HTTP.Enable && app.HTTPServer != nil {
-		httpLis, err := net.Listen("tcp", ":"+app.Config.Server.HTTP.Port)
-		if err != nil {
-			app.Log.Errorf("failed to listen on HTTP port %s: %v", app.Config.Server.HTTP.Port, err)
-		} else {
-			go func() {
-				if err := app.HTTPServer.Serve(httpLis); err != nil && err != http.ErrServerClosed {
-					app.Log.Errorf("failed to start HTTP server: %v", err)
-				}
-			}()
-		}
-	}
-
-	// Start gRPC and GraphQL servers if build tags are enabled
-	app.startConditionalServers(ctx)
+	app.startRESTServer(ctx)
+	app.startGRPCServer(ctx)
+	app.startGraphQLServer(ctx)
 }
 
 // shutdownServers gracefully shuts down all running servers.
 func (app *Application) shutdownServers(ctx context.Context) {
-	if app.HTTPServer != nil {
-		app.HTTPServer.Shutdown(ctx)
-	}
-	
-	// Shutdown gRPC and GraphQL servers if build tags are enabled
-	app.shutdownConditionalServers(ctx)
+	app.shutdownRESTServer(ctx)
+	app.shutdownGRPCServer(ctx)
+	app.shutdownGraphQLServer(ctx)
+}
+
+// Helper to listen on a TCP port
+func listenTCP(address string) (net.Listener, error) {
+	return net.Listen("tcp", address)
 }
