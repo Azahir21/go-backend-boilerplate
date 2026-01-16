@@ -12,10 +12,36 @@ dev: ## Start development server with hot reload (requires Air)
 	@echo "Starting development server with hot reload..."
 	air
 
-run: ## Start production server
-	@echo "Starting production server..."
-	go run main.go
+# Run commands
+run: ## Start application with all delivery layers
+	@echo "Starting application with all delivery layers..."
+	go run -tags "rest,grpc,graphql" cmd/main.go
 
+run-rest: ## Start REST-only server
+	@echo "Starting REST-only server..."
+	go run -tags rest cmd/main.go
+
+run-grpc: ## Start gRPC-only server
+	@echo "Starting gRPC-only server..."
+	go run -tags grpc cmd/main.go
+
+run-graphql: ## Start GraphQL-only server
+	@echo "Starting GraphQL-only server..."
+	go run -tags graphql cmd/main.go
+
+run-rest-grpc: ## Start server with REST + gRPC support
+	@echo "Starting server with REST and gRPC support..."
+	go run -tags "rest,grpc" cmd/main.go
+
+run-rest-graphql: ## Start server with REST + GraphQL support
+	@echo "Starting server with REST and GraphQL support..."
+	go run -tags "rest,graphql" cmd/main.go
+
+run-grpc-graphql: ## Start server with gRPC + GraphQL support
+	@echo "Starting server with gRPC and GraphQL support..."
+	go run -tags "grpc,graphql" cmd/main.go
+
+# Build commands
 build: ## Build the application binary with all delivery layers
 	@echo "Building application with all delivery layers..."
 	go build -tags "rest,grpc,graphql" -o bin/go-backend-boilerplate ./cmd
