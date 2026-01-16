@@ -12,10 +12,12 @@ func registerModules(deps *module.Dependencies) ([]module.HTTPModule, []module.G
 	var grpcModules []module.GRPCModule
 	var graphqlModules []module.GraphQLModule
 
-	// User module
-	httpModules = append(httpModules, userConfig.NewHTTPConfig(deps))
-	grpcModules = append(grpcModules, userConfig.NewGRPCConfig(deps))
-	graphqlModules = append(graphqlModules, userConfig.NewGraphQLConfig(deps))
+	// User module - only register if SQL database is enabled
+	if deps.DBClient != nil {
+		httpModules = append(httpModules, userConfig.NewHTTPConfig(deps))
+		grpcModules = append(grpcModules, userConfig.NewGRPCConfig(deps))
+		graphqlModules = append(graphqlModules, userConfig.NewGraphQLConfig(deps))
+	}
 
 	// Add more modules here as needed:
 	// productModule := productConfig.NewProductConfig(deps)
