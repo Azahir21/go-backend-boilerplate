@@ -6,9 +6,9 @@ package grpc
 import (
 	"context"
 
+	proto "github.com/azahir21/go-backend-boilerplate/internal/user/delivery/grpc/gen"
 	"github.com/azahir21/go-backend-boilerplate/internal/user/delivery/http/dto"
 	"github.com/azahir21/go-backend-boilerplate/internal/user/usecase"
-	"github.com/azahir21/go-backend-boilerplate/proto"
 	"github.com/sirupsen/logrus"
 )
 
