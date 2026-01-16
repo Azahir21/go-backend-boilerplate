@@ -59,7 +59,7 @@ func NewApplication(log *logrus.Logger) (*Application, error) {
 
 	// Initialize database (optional)
 	var dbClient *ent.Client
-	var uow *unitofwork.UnitOfWork
+	var uow unitofwork.UnitOfWork
 	if cfg.DB.Enable {
 		var err error
 		dbClient, err = db.NewEntClient(log, cfg)
