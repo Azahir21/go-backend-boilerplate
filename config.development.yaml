@@ -1,8 +1,35 @@
 database:
-  enable: false
+  enable: true # Set to false to disable SQL database
+  driver: postgres # Can be postgres, mysql, sqlite3, or mariadb
+  # dsn: "" # Optional: A direct Data Source Name string. If provided, other database fields might be ignored.
+  host: localhost
+  port: 5432
+  user: postgres
+  password: postgres
+  name: database
+  sslmode: disable
+  auto_migrate: false
+
+# Example MySQL configuration:
+# database:
+#   driver: mysql
+#   host: localhost
+#   port: 3306
+#   user: root
+#   password: "password"
+#   name: database
+#   dsn: "root:password@tcp(127.0.0.1:3306)/database?parseTime=True"
 
 mongo:
-  enable: false
+  enable: false # Set to true to enable MongoDB
+  uri: mongodb://localhost:27017
+  database: example_db
+  username: ""
+  password: ""
+  auth_source: admin
+  connect_timeout_ms: 10000
+  max_pool_size: 100
+  min_pool_size: 10
 
 server:
   env: development
@@ -10,20 +37,32 @@ server:
     port: "8080"
     enable: true
     cors_origins:
-      - "*"
+      - "*" # Allow all origins for development
     read_timeout: 5s
     write_timeout: 5s
     idle_timeout: 60s
     startup_banner: true
   grpc_server:
     port: "9000"
-    enable: false
+    enable: true
+    max_connection_idle: 30m
+    timeout: 15s
+    max_connection_age: 30m
+    max_connection_age_grace: 5m
+    time: 5s
+    force_transport_security: false
   graphql_server:
     port: "8081"
-    enable: false
+    enable: true
+    cors_origins:
+      - "*" # Allow all origins for development
+    read_timeout: 5s
+    write_timeout: 5s
+    idle_timeout: 60s
+    startup_banner: true
 
 jwt:
-  secret: test-secret-key
+  secret: your-secret-key-change-this-in-production
   expiry_hours: 72
 
 default_admin:
@@ -32,10 +71,42 @@ default_admin:
   password: admin123
 
 cache:
-  enable: false
+  enable: true # Set to false to disable cache
+  type: ristretto # Can be "redis" or "ristretto"
+  redis:
+    addr: localhost:6379
+    password: ""
+    db: 0
+  ristretto:
+    max_cost: 100000000 # 100MB
+    num_counters: 10000000 # 10x max_cost
+    buffer_items: 64
+    metrics: false
 
 storage:
-  enable: false
+  enable: true # Set to false to disable storage
+  type: local # Can be "local", "s3", or "gcs"
+  local:
+    base_path: ./uploads
+  s3:
+    region: us-east-1
+    access_key_id: ""
+    secret_access_key: ""
+    bucket: your-s3-bucket-name
+  gcs:
+    project_id: your-gcs-project-id
+    bucket: your-gcs-bucket-name
+    credentials_file: /path/to/your/gcs-credentials.json
 
 email:
-  enable: false
+  enable: true # Set to false to disable email
+  type: smtp # Can be "smtp" or "sendgrid"
+  smtp:
+    host: smtp.example.com
+    port: 587
+    username: your-smtp-username
+    password: your-smtp-password
+    from: no-reply@example.com
+  sendgrid:
+    api_key: your-sendgrid-api-key
+    from: no-reply@example.com
