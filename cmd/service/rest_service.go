@@ -4,7 +4,6 @@ import (
 	"net/http"
 	"time"
 
-	_ "github.com/azahir21/go-backend-boilerplate/docs" // Import generated docs
 	sharedHttp "github.com/azahir21/go-backend-boilerplate/internal/shared/http"
 	"github.com/azahir21/go-backend-boilerplate/internal/shared/module"
 	"github.com/azahir21/go-backend-boilerplate/pkg/config"

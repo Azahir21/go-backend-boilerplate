@@ -1,5 +1,10 @@
 .PHONY: help build run dev test test-coverage lint fmt vet clean docker-build docker-up docker-down docker-logs docker-shell docker-clean goose-create goose-up goose-down goose-status swag setup generate
 
+PROTO_ROOT=internal
+PROTO_FILES=$(shell find $(PROTO_ROOT) -name "*.proto")
+
+SWAG_MAIN=cmd/main.go
+
 # Default target
 help: ## Show this help message
     @echo 'Usage: make [target]'
@@ -12,9 +17,9 @@ dev: ## Start development server with hot reload (requires Air)
 	@echo "Starting development server with hot reload..."
 	air
 
-run: ## Start production server (default: REST)
-	@echo "Starting production server (REST)..."
-	go run cmd/rest/main.go
+run: ## Start production server
+	@echo "Starting production server..."
+	go run cmd/main.go
 
 run-rest: ## Start REST server
 	@echo "Starting REST server..."
@@ -82,16 +87,36 @@ tidy: ## Tidy dependencies
 # Documentation
 swag: ## Generate Swagger documentation
 	@echo "Generating Swagger documentation..."
-	@echo "Including directories: ./cmd, internal/user/delivery/http"
-	@echo "Update the directories if your handlers are located elsewhere."
-	swag init -dir ./cmd,internal/user/delivery/http -g main.go --parseDependency --parseInternal
+	swag init \
+		-g $(SWAG_MAIN) \
+		-dir . \
+		--exclude internal/*/delivery/grpc,internal/*/delivery/grpc/**,internal/*/delivery/graphql,internal/*/delivery/graphql/** \
+		--parseInternal
+
+# Generate Proto
+proto:
+	@echo "Generating protobuf code..."
+	for proto in $(PROTO_FILES); do \
+		proto_dir=$$(dirname $$proto); \
+		gen_dir=$$(echo $$proto_dir | sed 's|/proto$$|/gen|'); \
+		mkdir -p $$gen_dir; \
+		protoc \
+			--proto_path=$$proto_dir \
+			--go_out=$$gen_dir \
+			--go_opt=paths=source_relative \
+			--go-grpc_out=$$gen_dir \
+			--go-grpc_opt=paths=source_relative \
+			$$proto ; \
+	done
 
 # Code generation
 generate: ## Generate code for ent and protobuf
 	@echo "Generating ent code..."
 	go generate ./ent
 	@echo "Generating protobuf code..."
-	protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative proto/user.proto
+	$(MAKE) proto
+	@echo "Generating swag documentation..."
+	$(MAKE) swag
 
 
 goose-create: ## Create a new Goose migration file
@@ -155,8 +180,7 @@ docker-clean: ## Clean up Docker resources
 # Environment setup
 setup: ## Setup development environment
 	@echo "Setting up development environment..."
-	cp .env.example .env
-	@echo "Please edit .env file with your configuration"
+	@if [ ! -f .env ]; then cp .env.example .env; echo "Please edit .env file with your configuration"; fi
 	go mod tidy
 	@echo "Installing development tools..."
 	go install github.com/air-verse/air@latest

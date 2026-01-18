@@ -3,6 +3,7 @@ package module
 import (
 	"github.com/azahir21/go-backend-boilerplate/ent"
 	"github.com/azahir21/go-backend-boilerplate/infrastructure/cache"
+	"github.com/azahir21/go-backend-boilerplate/infrastructure/db/mongo"
 	"github.com/azahir21/go-backend-boilerplate/infrastructure/external"
 	"github.com/azahir21/go-backend-boilerplate/infrastructure/storage"
 	"github.com/azahir21/go-backend-boilerplate/internal/shared/unitofwork"
@@ -14,6 +15,7 @@ import (
 type Dependencies struct {
 	Log         *logrus.Logger
 	DBClient    *ent.Client
+	MongoClient *mongo.Client
 	Cache       cache.Cache
 	Storage     storage.Storage
 	EmailClient external.EmailClient

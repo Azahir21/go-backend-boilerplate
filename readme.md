@@ -12,18 +12,24 @@ A robust and scalable Go backend boilerplate designed to jumpstart your next pro
     -   **gRPC API**: For high-performance, language-agnostic communication.
     -   **GraphQL API**: Powered by `graphql-go` for flexible data fetching, with GraphiQL playground.
 -   **Database Integration**:
-    -   **Ent ORM**: Type-safe and powerful ORM for database interactions.
-    -   Supports PostgreSQL, MySQL, and SQLite.
-    -   Automatic database migrations.
+    -   **SQL Databases**: Ent ORM with support for PostgreSQL, MySQL, SQLite, and MariaDB.
+    -   **MongoDB**: Native MongoDB driver support for NoSQL workloads.
+    -   **Multi-Database Support**: Run SQL and MongoDB simultaneously for polyglot persistence.
+    -   **Optional Infrastructure**: All databases are optional and can be disabled via configuration.
+    -   Automatic database migrations (SQL only).
 -   **Authentication & Authorization**:
     -   JWT-based authentication.
     -   Role-based access control (Basic Admin/User roles).
 -   **Caching**:
     -   Flexible caching layer with support for Redis and Ristretto (in-memory).
+    -   Optional: Can be disabled if not needed.
 -   **File Storage**:
     -   Pluggable storage module with support for Local filesystem, AWS S3, and Google Cloud Storage (GCS).
+    -   Optional: Can be disabled if not needed.
 -   **Email Services**:
     -   Transactional email support with SMTP and SendGrid integrations.
+    -   Optional: Can be disabled if not needed.
+-   **Optional Infrastructure**: All infrastructure components (database, cache, storage, email) can be individually enabled/disabled.
 -   **Structured Logging**: Implemented with `logrus` for clear and customizable logging.
 -   **Configuration Management**: Centralized configuration using Viper, supporting YAML files and environment variables.
 -   **Unit of Work Pattern**: Ensures atomic database operations.
@@ -155,7 +161,181 @@ database:
   auto_migrate: true
 ```
 
-### 3. Database Setup (using Docker Compose for PostgreSQL/MySQL/Redis)
+## Optional Infrastructure Configuration
+
+All infrastructure components (database, cache, storage, email) are **optional** and can be individually enabled or disabled via configuration. This allows you to:
+
+- **Start quickly** without configuring unused services
+- **Run minimal setups** for development or testing
+- **Use only what you need** in production
+
+### Enabling/Disabling Infrastructure
+
+Each infrastructure component has an `enable` flag in the configuration:
+
+```yaml
+database:
+  enable: true  # Set to false to disable SQL database
+  driver: postgres
+  host: localhost
+  port: 5432
+  # ... other database config
+
+mongo:
+  enable: false  # Set to true to enable MongoDB
+  uri: mongodb://localhost:27017
+  database: myapp_db
+  # ... other MongoDB config
+
+cache:
+  enable: true  # Set to false to disable cache
+  type: ristretto
+  # ... cache config
+
+storage:
+  enable: true  # Set to false to disable storage
+  type: local
+  # ... storage config
+
+email:
+  enable: false  # Set to false to disable email
+  type: smtp
+  # ... email config
+```
+
+### Example Configurations
+
+**Minimal Setup (No Infrastructure)**:
+```yaml
+database:
+  enable: false
+mongo:
+  enable: false
+cache:
+  enable: false
+storage:
+  enable: false
+email:
+  enable: false
+```
+
+**SQL Database Only**:
+```yaml
+database:
+  enable: true
+  driver: postgres
+  # ... postgres config
+mongo:
+  enable: false
+cache:
+  enable: false
+storage:
+  enable: false
+email:
+  enable: false
+```
+
+**MongoDB Only**:
+```yaml
+database:
+  enable: false
+mongo:
+  enable: true
+  uri: mongodb://localhost:27017
+  database: myapp_db
+cache:
+  enable: false
+storage:
+  enable: false
+email:
+  enable: false
+```
+
+**Polyglot Persistence (SQL + MongoDB)**:
+```yaml
+database:
+  enable: true
+  driver: postgres
+  host: localhost
+  port: 5432
+  # ... postgres config for transactional data
+
+mongo:
+  enable: true
+  uri: mongodb://localhost:27017
+  database: analytics_db
+  # ... MongoDB for logs/events/analytics
+
+cache:
+  enable: true
+  type: redis
+  # ... redis cache
+
+storage:
+  enable: true
+  type: s3
+  # ... s3 storage
+
+email:
+  enable: true
+  type: smtp
+  # ... smtp email
+```
+
+### MongoDB Configuration
+
+MongoDB support is built-in and can be enabled alongside SQL databases or used independently:
+
+```yaml
+mongo:
+  enable: true
+  uri: mongodb://localhost:27017  # MongoDB connection URI
+  database: myapp_db              # Database name
+  username: ""                    # Optional: MongoDB username
+  password: ""                    # Optional: MongoDB password
+  auth_source: admin              # Optional: Authentication database
+  connect_timeout_ms: 10000       # Connection timeout in milliseconds
+  max_pool_size: 100              # Maximum connection pool size
+  min_pool_size: 10               # Minimum connection pool size
+```
+
+**Using MongoDB in Your Code**:
+
+The MongoDB client is available in the module dependencies:
+
+```go
+// In your module config
+func NewMyModule(deps *module.Dependencies) *MyModule {
+    if deps.MongoClient != nil {
+        // MongoDB is enabled, use it
+        collection := deps.MongoClient.Collection("my_collection")
+        // ... perform MongoDB operations
+    }
+    // ... rest of your code
+}
+```
+
+### Behavior When Infrastructure is Disabled
+
+When an infrastructure component is disabled:
+- ✅ Application starts successfully without it
+- ✅ No connection attempts are made
+- ✅ Clear logs indicate which components are disabled
+- ✅ Modules requiring that infrastructure are automatically skipped
+
+**Example Log Output (Minimal Setup)**:
+```
+INFO[2024-01-16T15:26:59Z] SQL Database is disabled, skipping initialization 
+INFO[2024-01-16T15:26:59Z] MongoDB is disabled, skipping initialization 
+INFO[2024-01-16T15:26:59Z] Cache is disabled, skipping initialization   
+INFO[2024-01-16T15:26:59Z] Storage is disabled, skipping initialization 
+INFO[2024-01-16T15:26:59Z] Email client is disabled, skipping initialization 
+INFO[2024-01-16T15:26:59Z] 🚀 Starting HTTP server on :8080
+```
+
+### 3. Database Setup
+
+#### SQL Databases (PostgreSQL/MySQL/SQLite)
 
 For development, you can use Docker Compose to spin up a PostgreSQL, MySQL, or Redis instance.
 
@@ -168,6 +348,37 @@ docker-compose up -d postgres redis
 ```
 
 Update your `config.yaml` or environment variables with the correct database and Redis connection details. If using `sqlite3`, no Docker setup is strictly needed as it uses a local file.
+
+#### MongoDB
+
+To use MongoDB, you can either:
+
+1. **Run MongoDB locally**:
+```bash
+# Using Docker
+docker run -d -p 27017:27017 --name mongodb mongo:latest
+
+# Or add to docker-compose.yaml:
+# mongodb:
+#   image: mongo:latest
+#   ports:
+#     - "27017:27017"
+#   environment:
+#     MONGO_INITDB_ROOT_USERNAME: admin
+#     MONGO_INITDB_ROOT_PASSWORD: password
+```
+
+2. **Use a cloud MongoDB service** (MongoDB Atlas, etc.) and configure the URI in your `config.yaml`
+
+3. **Disable MongoDB** if not needed by setting `mongo.enable: false`
+
+Update your configuration to enable MongoDB:
+```yaml
+mongo:
+  enable: true
+  uri: mongodb://localhost:27017
+  database: myapp_db
+```
 
 ### 4. Ent Migrations
 
@@ -239,6 +450,10 @@ The application will start the enabled servers (HTTP/REST, gRPC, GraphQL) on the
 ├── infrastructure/            # Infrastructure concerns (DB, Cache, Storage, External services)
 │   ├── cache/
 │   ├── db/
+│   │   ├── database.go        # SQL database setup (Ent)
+│   │   └── mongo/             # MongoDB integration
+│   │       ├── client.go      # MongoDB client
+│   │       └── health.go      # MongoDB health checks
 │   ├── external/
 │   └── storage/
 ├── internal/                  # Internal business logic and application features

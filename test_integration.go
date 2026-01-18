@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/azahir21/go-backend-boilerplate/pkg/logger"
-	"github.com/azahir21/go-backend-boilerplate/proto"
+	proto "github.com/azahir21/go-backend-boilerplate/internal/user/delivery/grpc/gen"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )

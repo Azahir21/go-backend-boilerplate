@@ -1,10 +1,11 @@
 database:
+  enable: true # Set to false to disable SQL database
   driver: postgres # Can be postgres, mysql, sqlite3, or mariadb
   # dsn: "" # Optional: A direct Data Source Name string. If provided, other database fields might be ignored.
   host: localhost
   port: 5432
   user: postgres
-  password: "123456"
+  password: postgres
   name: database
   sslmode: disable
   auto_migrate: false
@@ -18,6 +19,17 @@ database:
 #   password: "password"
 #   name: database
 #   dsn: "root:password@tcp(127.0.0.1:3306)/database?parseTime=True"
+
+mongo:
+  enable: false # Set to true to enable MongoDB
+  uri: mongodb://127.0.0.1:27017
+  database: example_db
+  username: ""
+  password: ""
+  auth_source: admin
+  connect_timeout_ms: 10000
+  max_pool_size: 100
+  min_pool_size: 10
 
 server:
   env: development
@@ -59,6 +71,7 @@ default_admin:
   password: admin123
 
 cache:
+  enable: true # Set to false to disable cache
   type: ristretto # Can be "redis" or "ristretto"
   redis:
     addr: localhost:6379
@@ -71,6 +84,7 @@ cache:
     metrics: false
 
 storage:
+  enable: true # Set to false to disable storage
   type: local # Can be "local", "s3", or "gcs"
   local:
     base_path: ./uploads
@@ -85,6 +99,7 @@ storage:
     credentials_file: /path/to/your/gcs-credentials.json
 
 email:
+  enable: true # Set to false to disable email
   type: smtp # Can be "smtp" or "sendgrid"
   smtp:
     host: smtp.example.com

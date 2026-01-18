@@ -14,6 +14,7 @@ import (
 	"github.com/azahir21/go-backend-boilerplate/ent"
 	"github.com/azahir21/go-backend-boilerplate/infrastructure/cache"
 	"github.com/azahir21/go-backend-boilerplate/infrastructure/db"
+	"github.com/azahir21/go-backend-boilerplate/infrastructure/db/mongo"
 	"github.com/azahir21/go-backend-boilerplate/infrastructure/external"
 	"github.com/azahir21/go-backend-boilerplate/infrastructure/storage"
 	"github.com/azahir21/go-backend-boilerplate/internal/shared/helper"
@@ -31,6 +32,7 @@ type Application struct {
 	Log            *logrus.Logger
 	Config         *config.Config
 	DBClient       *ent.Client
+	MongoClient    *mongo.Client
 	Cache          cache.Cache
 	Storage        storage.Storage
 	EmailClient    external.EmailClient
@@ -59,40 +61,95 @@ func NewApplication(log *logrus.Logger) (*Application, error) {
 	// Initialize JWT helper
 	helper.InitJWT(cfg.JWT.Secret, cfg.JWT.ExpiryHours)
 
-	// Initialize database
-	dbClient, err := db.NewEntClient(log, cfg)
-	if err != nil {
-		return nil, fmt.Errorf("failed to initialize database: %w", err)
+	// Initialize database (optional)
+	var dbClient *ent.Client
+	var uow unitofwork.UnitOfWork
+	if cfg.DB.Enable {
+		var err error
+		dbClient, err = db.NewEntClient(log, cfg)
+		if err != nil {
+			return nil, fmt.Errorf("failed to initialize database: %w", err)
+		}
+		// Initialize unit of work
+		uow = unitofwork.NewUnitOfWork(dbClient)
+	} else {
+		log.Info("SQL Database is disabled, skipping initialization")
 	}
 
-	// Initialize cache
-	appCache, err := cache.NewCache(log, cfg.Cache)
-	if err != nil {
-		dbClient.Close()
-		return nil, fmt.Errorf("failed to initialize cache: %w", err)
+	// Initialize MongoDB (optional)
+	var mongoClient *mongo.Client
+	if cfg.Mongo.Enable {
+		var err error
+		mongoClient, err = mongo.NewClient(log, cfg.Mongo)
+		if err != nil {
+			if dbClient != nil {
+				dbClient.Close()
+			}
+			return nil, fmt.Errorf("failed to initialize MongoDB: %w", err)
+		}
+	} else {
+		log.Info("MongoDB is disabled, skipping initialization")
 	}
 
-	// Initialize storage
-	appStorage, err := storage.NewStorage(context.Background(), log, cfg.Storage)
-	if err != nil {
-		dbClient.Close()
-		return nil, fmt.Errorf("failed to initialize storage: %w", err)
+	// Initialize cache (optional)
+	var appCache cache.Cache
+	if cfg.Cache.Enable {
+		var err error
+		appCache, err = cache.NewCache(log, cfg.Cache)
+		if err != nil {
+			if dbClient != nil {
+				dbClient.Close()
+			}
+			if mongoClient != nil {
+				mongoClient.Close()
+			}
+			return nil, fmt.Errorf("failed to initialize cache: %w", err)
+		}
+	} else {
+		log.Info("Cache is disabled, skipping initialization")
 	}
 
-	// Initialize email client
-	emailClient, err := external.NewEmailClient(log, cfg.Email)
-	if err != nil {
-		dbClient.Close()
-		return nil, fmt.Errorf("failed to initialize email client: %w", err)
+	// Initialize storage (optional)
+	var appStorage storage.Storage
+	if cfg.Storage.Enable {
+		var err error
+		appStorage, err = storage.NewStorage(context.Background(), log, cfg.Storage)
+		if err != nil {
+			if dbClient != nil {
+				dbClient.Close()
+			}
+			if mongoClient != nil {
+				mongoClient.Close()
+			}
+			return nil, fmt.Errorf("failed to initialize storage: %w", err)
+		}
+	} else {
+		log.Info("Storage is disabled, skipping initialization")
 	}
 
-	// Initialize unit of work
-	uow := unitofwork.NewUnitOfWork(dbClient)
+	// Initialize email client (optional)
+	var emailClient external.EmailClient
+	if cfg.Email.Enable {
+		var err error
+		emailClient, err = external.NewEmailClient(log, cfg.Email)
+		if err != nil {
+			if dbClient != nil {
+				dbClient.Close()
+			}
+			if mongoClient != nil {
+				mongoClient.Close()
+			}
+			return nil, fmt.Errorf("failed to initialize email client: %w", err)
+		}
+	} else {
+		log.Info("Email client is disabled, skipping initialization")
+	}
 
 	// Create shared dependencies for all modules
 	deps := &module.Dependencies{
 		Log:         log,
 		DBClient:    dbClient,
+		MongoClient: mongoClient,
 		Cache:       appCache,
 		Storage:     appStorage,
 		EmailClient: emailClient,
@@ -106,6 +163,7 @@ func NewApplication(log *logrus.Logger) (*Application, error) {
 		Log:            log,
 		Config:         cfg,
 		DBClient:       dbClient,
+		MongoClient:    mongoClient,
 		Cache:          appCache,
 		Storage:        appStorage,
 		EmailClient:    emailClient,
@@ -121,7 +179,15 @@ func Run(log *logrus.Logger) error {
 	if err != nil {
 		return fmt.Errorf("failed to initialize application: %w", err)
 	}
-	defer app.DBClient.Close() // Ensure DB client is closed
+	// Ensure DB clients are closed
+	defer func() {
+		if app.DBClient != nil {
+			app.DBClient.Close()
+		}
+		if app.MongoClient != nil {
+			app.MongoClient.Close()
+		}
+	}()
 
 	// Create a context for graceful shutdown
 	ctx, cancel := context.WithCancel(context.Background())
